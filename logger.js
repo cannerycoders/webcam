@@ -11,6 +11,20 @@ class Logger
             DEBUG: 5,   5: "Debug    "
         };
         this.logLevel = 5;
+        this.logStash = {
+            debug: console.debug,
+            log: console.log,
+            info: console.info,
+            warn: console.warn,
+            error: console.error, 
+        };
+
+        console.debug = this.debug.bind(this);
+        console.info = this.info.bind(this);
+        console.log = this.notice.bind(this);
+        console.warn = this.warning.bind(this);
+        console.error = this.error.bind(this);
+
 	}
 
     debug(msg)
@@ -49,7 +63,7 @@ class Logger
             level = this.lvl[level];
         if(level <= this.logLevel)
         {
-            console.log(this.timeStamp() + " " + this.lvl[level] + msg);
+            this.logStash.log(this.timeStamp() + " " + this.lvl[level] + msg);
         }
     }
 

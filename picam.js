@@ -1,4 +1,5 @@
 const {execFile} = require("child_process");
+
 // difference between exec and execFile: 
 //      exec: takes single string command
 //      execFile: 
@@ -9,21 +10,30 @@ class PiCam
 {
     constructor()
     {
+        this.captureCmd = "raspistill";
         this.args = [
             "--nopreview",
-            "--exposure=auto",
-        this.pdiff = "/home/pi/bin/perceptualdiff";
+            "--exposure", "auto",
+            "--metering", "spot",
+            "--quality", 85,
+            "-o",
+            ]
+        this.execOpts = {};
     }
 
-    capture(filename)
+    Capture(filename)
     {
         return new Promise((resolve, reject) => 
         {
-            exec(this.captureCmd, (error, stdout, stderr)=> {
-                if(stderr || error)
-                    reject(stderr || error);
-                resolve(stdout);
-            });
+            let args = this.args.slice();
+            args.push(filename);
+            execFile(this.captureCmd, args, this.execOpts, 
+                (error, stdout, stderr) => {
+                    if(stderr || error)
+                        reject(stderr || error);
+                    else
+                        resolve(stdout);
+                });
         });
     } 
 }

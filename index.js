@@ -1,9 +1,14 @@
-let Logger = require("./logger.js");
 let express = require("express");
+let Logger = require("./logger.js");
+let Picam = require("./picam.js");
+let ImgDiff = require("./imgdiff.js");
+let fs = require("fs");
 
 const Port = 8180;
 const AppName = "webcam";
 const IdleInterval = 5 * 60 * 1000; // every five minutes
+const CaptureRoot = "/mnt/thumb1/capture";
+const Prefix = "201Eakin";
 
 class App extends Logger
 {
@@ -12,7 +17,10 @@ class App extends Logger
         super();
         this.exp = express();
         this.exp.use(express.static("www"));
-        this.exp.use("/capture", express.static("/mnt/thumb1/capture"));
+        this.exp.use("/capture", express.static(CaptureRoot));
+        this.picam = new Picam();
+        this.imgdiff = new ImgDiff();
+        this.lastFile = null;
     }
 
     go()
@@ -20,15 +28,77 @@ class App extends Logger
         this.exp.listen(Port, () =>
         {
             this.notice(`${AppName} listening on port ${Port}`);
-            this.debug(` node ${process.version}`);
+            // this.debug(` node ${process.version}`);
+            this.onIdle();
         });
-        this.onIdle();
     }
 
     onIdle()
     {
         // perform a snapshot, compare it with last frame
+        let filename = this.buildFilename();
+        this.picam.Capture(filename)
+            .then((result) => {
+                this.cleanDup(filename);
+            })
+            .catch((error) => {
+                console.error("picam error: " + error);
+            });
         setTimeout(this.onIdle.bind(this), IdleInterval);
+    }
+
+    cleanDup(filename)
+    {
+        // don't prune a file if
+        if(this.lastFile != null)
+        {
+            this.imgdiff.Diff(filename, this.lastFile, (diff) => {
+                if(diff)
+                {
+                    console.info(path.basename(filename) + " saved");
+                    this.lastFile = filename;
+                }
+                else
+                {
+                    console.info(path.basename(filename) + " skipped");
+                    fs.unlink(filename, (err) => {
+                        if(err)
+                            console.error(err);
+                    });
+                }
+            });
+        }
+        else
+        {
+            this.lastFile = filename;
+        }
+    }
+    
+    buildFilename()
+    {
+        // organize our capture subdirs
+        //  Capture/Prefix/Fullyear/Month/Day/Hour24:Minute60.jpg
+        let now = new Date();
+        let year = now.getFullYear(); 
+        let month = ("00" + (now.getMonth()+1)).slice(-2);
+        let day = ("00" + now.getDate()).slice(-2);
+        let dir = `${CaptureRoot}/${Prefix}/${year}/${month}/${day}`;
+        try
+        {
+            fs.mkdirSync(dir, {recursive: true});
+        }
+        catch(err)
+        {
+            app.error(err);
+        }
+        // make sure dir exists
+        let hour = ("00" + now.getHours()).slice(-2);
+        let min = ("00" + now.getMinutes()).slice(-2);
+        let file = `${dir}/${hour}_${min}.jpg`;
+
+        if(now.getMinutes() < 3)
+            this.lastFile = null; // ensure that we get at least one file/hour
+        return file;
     }
 }
 

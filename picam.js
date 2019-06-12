@@ -13,9 +13,12 @@ class PiCam
         this.captureCmd = "raspistill";
         this.args = [
             "--nopreview",
+            "--timeout", 250, // ms
+            "--ISO", 400,  // (100-800)
+            "--sharpness", 25, // (-100, 100) - 0 is default
             "--exposure", "auto",
             "--metering", "spot",
-            "--quality", 85,
+            "--quality", 75,
             "-o",
             ]
         this.execOpts = {};

@@ -1,7 +1,8 @@
 let express = require("express");
+let path = require("path");
 let Logger = require("./logger.js");
 let Picam = require("./picam.js");
-let ImgDiff = require("./imgdiff.js");
+let ImgCmp = require("./imgcmp.js");
 let fs = require("fs");
 
 const Port = 8180;
@@ -19,7 +20,7 @@ class App extends Logger
         this.exp.use(express.static("www"));
         this.exp.use("/capture", express.static(CaptureRoot));
         this.picam = new Picam();
-        this.imgdiff = new ImgDiff();
+        this.imgcmp = new ImgCmp();
         this.lastFile = null;
     }
 
@@ -39,7 +40,7 @@ class App extends Logger
         let filename = this.buildFilename();
         this.picam.Capture(filename)
             .then((result) => {
-                this.cleanDup(filename);
+                this.keepTidy(filename);
             })
             .catch((error) => {
                 console.error("picam error: " + error);
@@ -47,12 +48,12 @@ class App extends Logger
         setTimeout(this.onIdle.bind(this), IdleInterval);
     }
 
-    cleanDup(filename)
+    keepTidy(filename)
     {
         // don't prune a file if
         if(this.lastFile != null)
         {
-            this.imgdiff.Diff(filename, this.lastFile, (diff) => {
+            this.imgcmp.Compare(filename, this.lastFile, (diff) => {
                 if(diff)
                 {
                     console.info(path.basename(filename) + " saved");
@@ -70,6 +71,7 @@ class App extends Logger
         }
         else
         {
+            console.info(path.basename(filename) + " saved [init]");
             this.lastFile = filename;
         }
     }

@@ -273,13 +273,7 @@ nav .fas.primary
     padding-right: 0px;
 }
 
-.videomsg
-{
-    color: rgb(136, 128, 24);
-    text-align: right;
-}
-
-#navtabs
+#navtabs /* container for dynamic list of navtab */
 {
     display: flex;
 }
@@ -293,6 +287,8 @@ nav .fas.primary
 .navtab.active a
 {
     color: green;
+    /* text-decoration: overline;*/
+    font-weight: bold;
 }
 
 .navtab:hover a
@@ -327,18 +323,6 @@ nav .fas.primary
 {
   visibility: visible;
   animation: fadein 0.5s, fadeout 0.5s 5s;
-}
-
-@keyframes fadein 
-{
-    from {bottom: 0; opacity: 0;}  
-    to {bottom: 30px; opacity: 1;}
-}
-
-@keyframes fadeout 
-{
-    from {bottom: 30px; opacity: 1;}
-    to {bottom: 0; opacity: 0;}
 }
 
 footer
@@ -439,13 +423,6 @@ footer
     padding-right: 10px;
 }
 
-.systemstate
-{
-    color: #16c;
-    background-image: linear-gradient(#111, #111);
-    /* vertical-align: baseline; */
-}
-
 .references
 {
     font-size: 14px;
@@ -511,66 +488,4 @@ input[type="text"]
     width: 640px;
     height: 480px;
     background-color: black;
-}
-
-.textEditorWidget
-{
-    position: relative;
-}
-
-.textEditor
-{ 
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-}
-
-.ace_gutter
-{
-    z-index: 0; /* prevent ace gutter from occluding the footer */
-}
-
-/* robolog -------------------------------------------*/
-.logmsg
-{
-    font-family: monospace;
-    font-size: 12px;
-}
-
-.timestamp
-{
-    color: #555;
-}
-
-.namespace
-{
-    color: #383;
-}
-
-.DEBUG
-{
-   color: #555;
-}
-
-.INFO
-{
-   color: #248;
-}
-
-.NOTICE
-{
-   color: #24F;
-}
-
-.WARNING
-{
-    color: #842;
-}
-
-.ERROR,
-.EXCEPTION
-{
-    color: #822;
 }

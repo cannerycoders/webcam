@@ -24,9 +24,8 @@ export class PageHandler
         return `<a href='${this.GetURL()}'>${this.GetLabel()}</a>`;
     }
 
-    BuildPage(cb) 
+    BuildPage(maincontent, navextra) 
     {
-        return cb(""); 
     }
 
 }

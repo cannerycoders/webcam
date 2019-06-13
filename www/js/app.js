@@ -1,13 +1,13 @@
 /* special url config syntax:
 *
-*   http://localhost:5080/?moving=0&date=101919&#tab0
+*   http://localhost:5080/?date=101919&#day
 *
 *  url hash selects the current nav page:
-*      #tab0, follows the optional configuration
+*      #day, follows the optional configuration
 *
 **/
-import LatestImg from "./ph/latest.js";
-import DayView from "./ph/day.js";
+import Day from "./ph/day.js";
+import Timelapse from "./ph/timelapse.js";
 
 export class App
 {
@@ -19,8 +19,8 @@ export class App
         this.currentPage = null;
 
         this.phList = []; // an ordered (left->right) collection of handlers
-        this.phList.push(new LatestImg());
-        this.phList.push(new DayView());
+        this.phList.push(new Day());
+        this.phList.push(new Timelapse());
         this.phMap = {};
         for(let i=0;i<this.phList.length;i++)
         {
@@ -183,6 +183,11 @@ export class App
         setTimeout(this.onIdle.bind(this), 1000/fps);
     }
 
+    navigateURL(url)
+    {
+        window.location.assign(url);
+    }
+
     // navigate: is the primary entrypoint for switch views
     navigate(hash)
     {
@@ -201,7 +206,6 @@ export class App
     {
         if(window.location.search.length <= 0)
             return;
-
         let url = new URL(window.location);
         for(let pair of url.searchParams.entries())
         {
@@ -224,9 +228,10 @@ export class App
             this.phMap[this.currentPage].Cleanup();
         this.clearPageIdlers();
         this.currentPage = page;
-        let html = this.phMap[page].BuildPage((html) => {
-            document.getElementById("maincontent").innerHTML = html;
-        });
+        let maincontent = document.getElementById("maincontent");
+        let navextra = document.getElementById("navextra");
+        let url = new URL(window.location);
+        this.phMap[page].BuildPage(maincontent, navextra, url.searchParams);
         this.updateNav();
     }
 

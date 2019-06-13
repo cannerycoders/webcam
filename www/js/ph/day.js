@@ -6,6 +6,14 @@ class Day extends PageHandler
     constructor()
     {
         super();
+        this.modalDiv = document.getElementById("imgmodalDiv");
+        this.caption = document.getElementById("imgmodalCaption");
+        this.modalImg = document.getElementById("imgmodal");
+        this.modalClose = document.getElementById("imgmodalClose");
+        this.modalClose.onclick = function()
+        {
+            this.modalDiv.style.display = "none";
+        }.bind(this);
     }
 
     GetId()
@@ -43,11 +51,17 @@ class Day extends PageHandler
                 let fp = `${dir}/${f}`;
                 let fpt = fp + ".thumb";
                 html += "<div class='thumbnail'>";
-                html += `<a href='${fp}'><img src='${fpt}'/></a>`;
+                html += `<img class='hoverable clickable' src='${fpt}'/>`;
                 html += "</div>";
             }
             page.innerHTML = html;
             navextra.innerHTML = "<input type='text' id='datepicker'>";
+            
+            document.querySelectorAll(".clickable").forEach((i) =>
+            {
+                i.onclick = this.imgClick.bind(this, i);
+            });
+
             this.dayinput = document.getElementById("datepicker");
             this.picker = new Pikaday({
                                 onSelect: this.changeDate.bind(this),
@@ -59,6 +73,14 @@ class Day extends PageHandler
             this.picker.setDate(day);
             this.dayinput.value = this.formatDate(day);
         });
+    }
+
+    imgClick(i)
+    {
+        console.log("clicked: " + i);
+        this.modalDiv.style.display = "block";
+        this.modalImg.src = i.src.replace(/.thumb/, "");
+        this.caption.innerHTML = this.modalImg.src;
     }
 
     changeDate(date)

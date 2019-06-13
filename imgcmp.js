@@ -30,7 +30,7 @@ class ImgCmp
                     {
                         // success: images aren't equal
                         // here stdout tells us interesting stats
-                        console.info("imgcmp: " + stdout.replace("\n", ", "));
+                        console.info("imgcmp: " + stdout.replace(/\n/g, ", "));
                     }
                     else
                     {

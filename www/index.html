@@ -1,5 +1,51 @@
-<html>
-<body>
-Hello, world.
-</body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport"
+       content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="icon" href="/favicon.ico">
+    <title>Webcam BI</title>
+
+    <link href="/css/index.css" rel="stylesheet">
+    <link href="/css/selector.css" rel="stylesheet">
+    <link href="/css/slider.css" rel="stylesheet">
+    <link href='https://fonts.googleapis.com/css?family=IM+Fell+DW+Pica+SC' 
+            rel='stylesheet' type='text/css'>
+  </head>
+
+  <body>
+    <header>
+        <nav>
+            <div id="navlogo">
+                <img src="/img/logo.png" />
+            </div>
+            <div class="navtitle">Webcam BI</div>
+            <div id="navtabs">
+            </div>
+			<div id="navextra">
+                zoom: <input type="range"></input>
+            </div>
+        </nav>
+    </header>
+
+    <div id="maincontent" class="container gridded"> </div>
+    <div id="alert"></div>
+    <div id="footerpad"> </div>
+
+    <footer>
+	    <section id="copyright">
+              &copy; Copyright Cannery Coders 2019 
+		</section>
+    </footer>
+
+    <!-- jQuery first -->
+    <script src="/nih/jquery-3.3.1.min.js"></script>
+
+    <!-- app first -->
+    <script src="/js/app.js" type="module"></script>
+
+  </body>
 </html>

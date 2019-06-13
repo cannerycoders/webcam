@@ -3,88 +3,187 @@ let path = require("path");
 let Logger = require("./logger.js");
 let Picam = require("./picam.js");
 let ImgCmp = require("./imgcmp.js");
+let Mailer = require("./mailer.js");
 let fs = require("fs");
+let os = require("os");
+let {exec} = require("child_process");
 
 const Port = 8180;
 const AppName = "webcam";
 const IdleInterval = 5 * 60 * 1000; // every five minutes
+const ServerRoot = "/mnt/thumb1";
 const CaptureRoot = "/mnt/thumb1/capture";
 const Prefix = "201Eakin";
 
 class App extends Logger
 {
-    constructor()
+    constructor(captureRoot=CaptureRoot, prefix=Prefix)
     {
-        super();
+        super(os.hostname());
+        this.hostname = os.hostname();
+        this.captureRoot = captureRoot;
+        this.prefix = prefix;
         this.exp = express();
         this.exp.use(express.static("www"));
-        this.exp.use("/capture", express.static(CaptureRoot));
+        this.exp.use("/capture", express.static(this.captureRoot));
         this.picam = new Picam();
         this.imgcmp = new ImgCmp();
-        this.lastFile = null;
+        this.mailer = new Mailer();
+        this.lastFileName = null;
     }
 
     go()
     {
+        this.exp.get("/api/getlatest", this.getinfo.bind(this, "latest"));
+        this.exp.get("/api/gettoday", this.getinfo.bind(this, "today"));
+        this.exp.get("/api/getanyday", this.getinfo.bind(this, "anytoday"));
         this.exp.listen(Port, () =>
         {
             this.notice(`${AppName} listening on port ${Port}`);
-            // this.debug(` node ${process.version}`);
+            this.performScheduledTasks("startup", new Date());
             this.onIdle();
         });
+    }
+
+    getinfo(msg, req, res)
+    {
+        console.log(`get ${msg}`);
+        let result = {};
+        switch(msg)
+        {
+        case "latest":
+        case "today":
+            {
+                let dir = this.buildCaptureDir(new Date());
+                let files = fs.readdirSync(dir);
+                result.query = msg;
+                result.dir = dir.slice(ServerRoot.length);
+                if(msg == "today")
+                    result.files = files;
+                else
+                {
+                    // for now we assume the newest one is last in the list
+                    result.files = [files[files.length-1]];
+                }
+            }
+            break; 
+        case "anytoday":
+            break; 
+        default:
+            console.error("invalid getinfo request " + msg);
+            break; 
+        }
+        res.json(result);
     }
 
     onIdle()
     {
         // perform a snapshot, compare it with last frame
-        let filename = this.buildFilename();
-        this.picam.Capture(filename)
+        let now = new Date();
+        let hours = now.getHours();
+        let min = now.getMinutes();
+
+        if(min < 3)
+        {
+            let routine;
+            if(hours == 4)
+            {
+                if(a.getDate() == 1)
+                    routine = "monthly";
+                else
+                if(a.getDay() == 0)
+                    routine = "weekly";
+                else
+                    routine = "daily";
+            }
+            else
+                routine = "hourly";
+            this.performScheduledTasks(routine, now);
+        }
+        this.doCapture();
+        setTimeout(this.onIdle.bind(this), IdleInterval);
+    }
+
+    doCapture(asThumbnail=false)
+    {
+        let filename = this.buildFilename(asThumbnail);
+        console.debug("doCapture: " + filename);
+        if(asThumbnail)
+            console.info("buildThumbnail: " + path.basename(filename));
+        this.picam.Capture(filename, asThumbnail)
             .then((result) => {
-                this.keepTidy(filename);
+                if(!asThumbnail) 
+                    this.keepTidy(filename); // may invoke doCapture(true)
+                // else don't keepTidy thumbnails
             })
             .catch((error) => {
                 console.error("picam error: " + error);
             });
-        setTimeout(this.onIdle.bind(this), IdleInterval);
     }
 
+    // called to compare newly acquired file with lastmost successful
+    // acquisition.  If images are "the same", we delete the new one.
     keepTidy(filename)
     {
         // don't prune a file if
-        if(this.lastFile != null)
+        let makeThumbnail = false;
+        if(this.lastFileName != null)
         {
-            this.imgcmp.Compare(filename, this.lastFile, (diff) => {
-                if(diff)
-                {
-                    console.info(path.basename(filename) + " saved");
-                    this.lastFile = filename;
-                }
-                else
-                {
-                    console.info(path.basename(filename) + " skipped");
-                    fs.unlink(filename, (err) => {
-                        if(err)
-                            console.error(err);
+            if(this.lastFileName == filename)
+                console.error("invalid state: " + filename);
+            else
+                this.imgcmp.Compare(filename, this.lastFileName, 
+                    (diff) => {
+                        if(diff)
+                        {
+                            console.info(path.basename(filename) + " saved");
+                            this.lastFileName = filename;
+                            makeThumbnail = true;
+                        }
+                        else
+                        {
+                            console.info(path.basename(filename) + " skipped");
+                            fs.unlink(filename, (err) => {
+                                if(err)
+                                    console.error(err);
+                            });
+                        }
                     });
-                }
-            });
         }
         else
         {
             console.info(path.basename(filename) + " saved [init]");
-            this.lastFile = filename;
+            this.lastFileName = filename;
+            makeThumbnail = true;
+        }
+
+        if(makeThumbnail)
+        {
+            this.doCapture(true);
         }
     }
-    
-    buildFilename()
+
+    buildCaptureDir(date=null)
     {
+        let year, month, day;
+        if(date == null)
+            date = new Date();
+        year = date.getFullYear(); 
+        month = ("00" + (date.getMonth()+1)).slice(-2);
+        day = ("00" + date.getDate()).slice(-2);
+        return `${this.captureRoot}/${this.prefix}/${year}/${month}/${day}`;
+    }
+    
+    buildFilename(asThumbnail=false)
+    {
+        if(asThumbnail && this.lastFileName) // thumbnails
+            return this.lastFileName + ".thumb";
+
         // organize our capture subdirs
         //  Capture/Prefix/Fullyear/Month/Day/Hour24:Minute60.jpg
+
         let now = new Date();
-        let year = now.getFullYear(); 
-        let month = ("00" + (now.getMonth()+1)).slice(-2);
-        let day = ("00" + now.getDate()).slice(-2);
-        let dir = `${CaptureRoot}/${Prefix}/${year}/${month}/${day}`;
+        let dir = this.buildCaptureDir(now);
         try
         {
             fs.mkdirSync(dir, {recursive: true});
@@ -97,10 +196,52 @@ class App extends Logger
         let hour = ("00" + now.getHours()).slice(-2);
         let min = ("00" + now.getMinutes()).slice(-2);
         let file = `${dir}/${hour}_${min}.jpg`;
-
         if(now.getMinutes() < 3)
-            this.lastFile = null; // ensure that we get at least one file/hour
+            this.lastFileName = null; // ensure we get at least one file/hour
         return file;
+    }
+
+    /*-------------------------------------------------------------*/
+    performScheduledTasks(routine, d)
+    {
+        let dstr = d.toLocaleString();
+        let subject = `webcam ${this.hostname} ${routine} ${dstr}`;
+        console.info(subject);
+        switch(routine)
+        {
+        case "daily": // fall-thru
+        case "weekly":
+        case "monthly":
+        case "startup":
+            this.generateReport(routine, dstr, (msg) => {
+                this.mailer.Send(subject, msg, true);
+            });
+            break;
+        case "hourly":
+            break; // logged above
+        }
+    }
+
+    generateReport(routine, datestr, onDone)
+    {
+        // for now we ignore detail param
+        let cmd = `df -h ${this.captureRoot}`;
+        exec(cmd, {}, (error, stdout, stderr) => {
+            if(stderr || error)
+                console.error(`${error} ${stderr}`);
+            else
+            {
+                let msg = `webcam ${this.hostname} report ${datestr}\n\n`;
+                msg += `${cmd}\n\n`;
+                msg += "<code>\n";
+                if(stdout.length)
+                    msg += `${stdout}\n\n`;
+                if(stderr.length)
+                    msg += `### stderr ####\n\n${stderr}\n`;
+                msg += "</code>\n";
+                onDone(msg);
+            }
+        });
     }
 }
 

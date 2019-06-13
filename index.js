@@ -10,7 +10,8 @@ let {exec} = require("child_process");
 
 const Port = 8180;
 const AppName = "webcam";
-const IdleInterval = 5 * 60 * 1000; // every five minutes
+const IdleMinutes = 5;
+const IdleInterval = IdleMinutes * 60 * 1000;
 const ServerRoot = "/mnt/thumb1";
 const CaptureRoot = "/mnt/thumb1/capture";
 const Prefix = "201Eakin";
@@ -34,9 +35,7 @@ class App extends Logger
 
     go()
     {
-        this.exp.get("/api/getlatest", this.getinfo.bind(this, "latest"));
-        this.exp.get("/api/gettoday", this.getinfo.bind(this, "today"));
-        this.exp.get("/api/getanyday", this.getinfo.bind(this, "anytoday"));
+        this.exp.get("/api/getday*", this.getinfo.bind(this));
         this.exp.listen(Port, () =>
         {
             this.notice(`${AppName} listening on port ${Port}`);
@@ -45,29 +44,35 @@ class App extends Logger
         });
     }
 
-    getinfo(msg, req, res)
+    // https://expressjs.com/en/api.html#req
+    getinfo(req, res)
     {
-        console.log(`get ${msg}`);
+        // 
+        console.log(`path: ${JSON.stringify(req.path)}`); // "/api/getday"
+        console.log(`url: ${JSON.stringify(req.url)}`);
+        console.log(`query: ${JSON.stringify(req.query)}`);
+        console.log(`params: ${JSON.stringify(req.params)}`);
+        // console.log(`route: ${JSON.stringify(req.route)}`); // "/day"
         let result = {};
-        switch(msg)
+        switch(req.path)
         {
-        case "latest":
-        case "today":
+        case "/api/today":
+        case "/api/getday":
             {
-                let dir = this.buildCaptureDir(new Date());
-                let files = fs.readdirSync(dir);
-                result.query = msg;
-                result.dir = dir.slice(ServerRoot.length);
-                if(msg == "today")
-                    result.files = files;
+                let date;
+                if(req.path== "/api/today")
+                    date = new Date();
                 else
                 {
-                    // for now we assume the newest one is last in the list
-                    result.files = [files[files.length-1]];
+                    // DDMMYY -> DD/MM/YY
+                    date = new Date(req.query.day.match(/..?/g).join("/"));
                 }
+                let dir = this.buildCaptureDir(date);
+                let files = fs.readdirSync(dir);
+                result.query = req.path;
+                result.dir = dir.slice(ServerRoot.length);
+                result.files = files;
             }
-            break; 
-        case "anytoday":
             break; 
         default:
             console.error("invalid getinfo request " + msg);
@@ -83,10 +88,10 @@ class App extends Logger
         let hours = now.getHours();
         let min = now.getMinutes();
 
-        if(min < 3)
+        if(min < IdleMinutes)
         {
             let routine;
-            if(hours == 4)
+            if(hours == 3)
             {
                 if(a.getDate() == 1)
                     routine = "monthly";
@@ -138,7 +143,7 @@ class App extends Logger
                         {
                             console.info(path.basename(filename) + " saved");
                             this.lastFileName = filename;
-                            makeThumbnail = true;
+                            this.doCapture(true); // make thumbnail
                         }
                         else
                         {
@@ -154,12 +159,7 @@ class App extends Logger
         {
             console.info(path.basename(filename) + " saved [init]");
             this.lastFileName = filename;
-            makeThumbnail = true;
-        }
-
-        if(makeThumbnail)
-        {
-            this.doCapture(true);
+            this.doCapture(true); // make thumbnail
         }
     }
 
@@ -196,8 +196,6 @@ class App extends Logger
         let hour = ("00" + now.getHours()).slice(-2);
         let min = ("00" + now.getMinutes()).slice(-2);
         let file = `${dir}/${hour}_${min}.jpg`;
-        if(now.getMinutes() < 3)
-            this.lastFileName = null; // ensure we get at least one file/hour
         return file;
     }
 
@@ -218,6 +216,8 @@ class App extends Logger
             });
             break;
         case "hourly":
+            // ensure we get at least one file/hour
+            this.lastFileName = null; 
             break; // logged above
         }
     }

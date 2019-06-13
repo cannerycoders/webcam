@@ -6,8 +6,9 @@
 *      #day, follows the optional configuration
 *
 **/
-import Day from "./ph/day.js";
+import Moments from "./ph/moments.js";
 import Timelapse from "./ph/timelapse.js";
+import Now from "./ph/now.js";
 
 export class App
 {
@@ -19,8 +20,9 @@ export class App
         this.currentPage = null;
 
         this.phList = []; // an ordered (left->right) collection of handlers
-        this.phList.push(new Day());
+        this.phList.push(new Moments());
         this.phList.push(new Timelapse());
+        this.phList.push(new Now());
         this.phMap = {};
         for(let i=0;i<this.phList.length;i++)
         {
@@ -87,9 +89,8 @@ export class App
 
     // onReady is invoked after all scripts have finished loading.
     onReady()
-    {
+    { 
         window.onbeforeunload = this.onBeforeUnload.bind(this);
-        this._parseURLSearch(); // override layout and env
 
         let div = document.getElementById("navtabs");
         let html = "";
@@ -100,13 +101,19 @@ export class App
             html += "</div>";
         }
         div.innerHTML = html;
-
+        this.dayinput = document.getElementById("datepicker")
+        this.picker = new Pikaday({
+                                onSelect: this.onDateSelect.bind(this),
+                                defaultDate: new Date(),
+                                field: this.dayinput,
+                                theme: "dark-theme",
+                                toString: this.formatDate.bind(this)
+                            });
         var initURL = this.homeHref;
         if(window.location.hash)
         {
             // app.logMsg("using window.location.hash: "+window.location.hash);
             initURL = window.location.hash;
-            this.navigate(window.location.hash);
         }
         this.navigate(initURL);
 
@@ -183,9 +190,20 @@ export class App
         setTimeout(this.onIdle.bind(this), 1000/fps);
     }
 
-    navigateURL(url)
+    parseURL(urlstr, init=false)
     {
-        window.location.assign(url);
+        let search = window.location.search.split("=");
+        let dayindex = search.indexOf("?day");
+        let day;
+        if(dayindex == -1)
+            day = new Date();
+        else
+        {
+            let v = search[dayindex+1];
+            let dstr = v.match(/..?/g).join("/");
+            day = new Date(dstr);
+        }
+        this.daystr = this.formatDate(day, "URL");
     }
 
     // navigate: is the primary entrypoint for switch views
@@ -194,22 +212,11 @@ export class App
         if(hash == "")
             hash = this.homeHref;
         let page = hash.slice(1); // works for empty
+		this.updateDate();
         if(this.currentPage !== page)
         {
             this.info("navigate: " + page);
             this.loadPage(page);
-        }
-        this._parseURLSearch();
-    }
-
-    _parseURLSearch()
-    {
-        if(window.location.search.length <= 0)
-            return;
-        let url = new URL(window.location);
-        for(let pair of url.searchParams.entries())
-        {
-            app.info("url search: " + pair);
         }
     }
 
@@ -228,11 +235,19 @@ export class App
             this.phMap[this.currentPage].Cleanup();
         this.clearPageIdlers();
         this.currentPage = page;
+        this.refreshPage();
+        this.updateNav();
+    }
+
+    refreshPage()
+    {
+        let page = this.currentPage;
+        this.debug("refreshPage " + page);
+        let url = new URL(window.location);
         let maincontent = document.getElementById("maincontent");
         let navextra = document.getElementById("navextra");
-        let url = new URL(window.location);
-        this.phMap[page].BuildPage(maincontent, navextra, url.searchParams);
-        this.updateNav();
+        this.phMap[page].BuildPage(maincontent, navextra, this.daystr, 
+                                  url.searchParams);
     }
 
     interpolate(body, map)
@@ -251,11 +266,44 @@ export class App
         return result;
     }
 
-    // robotlog callbacks ------------------------------------------------
-    onLogConnect(cnx)
+    /* date -----------------------------------------------------*/
+	updateDate(date)
+	{
+        if(!date)
+            date = new Date();
+		this.picker.setDate(date, true/*prevent onSelect*/);
+		this.dayinput.value = this.formatDate(date);
+        this.daystr = this.formatDate(date, "URL");
+	}
+
+    onDateSelect(date)
     {
-        this.info("robotLog connected:" + cnx);
+        let str = this.formatDate(date, "URL");
+        console.info("change date to " + str);
+		// this.dayinput.value = this.formatDate(date);
+        this.daystr = str;;
+        this.refreshPage();
     }
+
+    formatDate(date, format="DD/MM/YY") 
+    {
+        // format is currently a kludge
+        const day = date.getDate();
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+        if(format == "URL")
+        {
+            let MM = ("00" + month).slice(-2);
+            let DD = ("00" + day).slice(-2);
+            let YY = ("" + year).slice(-2);
+            return `${MM}${DD}${YY}`;
+        }
+        else
+        {
+            return ` ${month} / ${day} / ${year}`;
+        }
+    }
+
 
     // ajax utils -------------------------------------------------------
     sendGetRequest(url, responseHandler, isJSON=true)
@@ -292,28 +340,6 @@ export class App
                 responseHandler(request.responseText);
             }
         }
-    }
-
-    loadImage(url)
-    {
-        return new Promise(resolve => {
-            let i = new Image();
-            i.onload = () => {
-                resolve(i);
-            };
-            i.src = url;
-        });
-    }
-
-    downloadURI(uri, name)
-    {
-        var link = document.createElement("a");
-        link.target = "_blank";
-        link.download = name;
-        link.href = uri;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     }
 } // end of App class
 

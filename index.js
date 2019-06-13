@@ -48,11 +48,14 @@ class App extends Logger
     getinfo(req, res)
     {
         // 
-        console.log(`path: ${JSON.stringify(req.path)}`); // "/api/getday"
+        // console.log(`path: ${JSON.stringify(req.path)}`); 
+        //  "/api/getday"
         console.log(`url: ${JSON.stringify(req.url)}`);
+        //  "/api/getday?day=061219
         console.log(`query: ${JSON.stringify(req.query)}`);
-        console.log(`params: ${JSON.stringify(req.params)}`);
-        // console.log(`route: ${JSON.stringify(req.route)}`); // "/day"
+        //  {"day": "061319"}
+        // console.log(`params: ${JSON.stringify(req.params)}`);
+        //  {"0": ""}
         let result = {};
         switch(req.path)
         {
@@ -60,13 +63,16 @@ class App extends Logger
         case "/api/getday":
             {
                 let date;
-                if(req.path== "/api/today")
-                    date = new Date();
-                else
+                if(req.path == "/api/getday")
                 {
                     // DDMMYY -> DD/MM/YY
-                    date = new Date(req.query.day.match(/..?/g).join("/"));
+                    if(req.query.day)
+                        date = new Date(req.query.day.match(/..?/g).join("/"));
+                    else
+                        console.warn("invalid query");
                 }
+                if(!date)
+                    date = new Date(); // now
                 let dir = this.buildCaptureDir(date);
                 let files = fs.readdirSync(dir);
                 result.query = req.path;

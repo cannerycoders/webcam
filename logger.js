@@ -1,6 +1,6 @@
 class Logger
 {
-    constructor()
+    constructor(nmspace=null)
     {
         this.lvl = // this must precede any logging calls
         {
@@ -18,6 +18,10 @@ class Logger
             warn: console.warn,
             error: console.error, 
         };
+        if(nmspace)
+            this.logprefix = `${nmspace} `;
+        else
+            this.logprefix = "";
 
         console.debug = this.debug.bind(this);
         console.info = this.info.bind(this);
@@ -63,7 +67,8 @@ class Logger
             level = this.lvl[level];
         if(level <= this.logLevel)
         {
-            this.logStash.log(this.timeStamp() + " " + this.lvl[level] + msg);
+            this.logStash.log(
+            `${this.logprefix}${this.timeStamp()} ${this.lvl[level]} ${msg}`);
         }
     }
 

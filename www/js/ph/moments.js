@@ -39,8 +39,8 @@ class Moments extends PageHandler
                 if(f.indexOf(".thumb") != -1) continue;
                 let fp = `${dir}/${f}`;
                 let fpt = fp + ".thumb";
-                html += "<div class='thumbnail'>";
-                html += `<img class='hoverable clickable' src='${fpt}'/>`;
+                html += "<div>";
+                html += `<img class='thumbnail hoverable clickable' src='${fpt}'/>`;
                 html += "</div>";
             }
             contentdiv.innerHTML = html;

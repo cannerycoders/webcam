@@ -267,6 +267,12 @@ export class App
     }
 
     /* date -----------------------------------------------------*/
+    setDateVisibility(b)
+    {
+        let el = document.getElementById("navdate");
+        el.style.visibility = b ? "visible" : "hidden";
+    }
+
 	updateDate(date)
 	{
         if(!date)

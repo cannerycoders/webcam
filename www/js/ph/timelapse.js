@@ -1,3 +1,4 @@
+/* global app */
 import {PageHandler} from "./ph.js";
 
 class Timelapse extends PageHandler
@@ -19,6 +20,7 @@ class Timelapse extends PageHandler
 
     BuildPage(page, extra) 
     {
+        app.setDateVisibility(true);
         page.innerHTML = "";
         extra.innerHTML = "";
     }

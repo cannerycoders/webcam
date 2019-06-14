@@ -20,6 +20,9 @@ class Now extends PageHandler
 
     BuildPage(page, navextra, searchParams)
     {  
+        app.setDateVisibility(false);
+        page.innerHTML = "";
+        navextra.innerHTML = "";
     }
 }
 

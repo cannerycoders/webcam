@@ -24,6 +24,7 @@ class App extends Logger
         this.hostname = os.hostname();
         this.captureRoot = captureRoot;
         this.prefix = prefix;
+        this.timelapseDir = `${captureRoot}/${prefix}/timelapse`;
         this.exp = express();
         this.exp.use(express.static("www"));
         this.exp.use("/capture", express.static(this.captureRoot));
@@ -36,6 +37,7 @@ class App extends Logger
     go()
     {
         this.exp.get("/api/getday*", this.getinfo.bind(this));
+        this.exp.get("/api/gettimelapse", this.getinfo.bind(this));
         this.exp.listen(Port, () =>
         {
             this.notice(`${AppName} listening on port ${Port}`);
@@ -59,6 +61,14 @@ class App extends Logger
         let result = {};
         switch(req.path)
         {
+        case "/api/gettimelapse":
+            {   
+                let files = fs.readdirSync(this.timelapseDir);
+                result.query = req.path;
+                result.dir = this.timelapseDir.slice(ServerRoot.length);
+                result.files = files;
+            }
+            break;
         case "/api/today":
         case "/api/getday":
             {
@@ -214,6 +224,7 @@ class App extends Logger
         switch(routine)
         {
         case "daily": // fall-thru
+            this.generateTimelapse(new Date().setDate(d.getDate() -1))
         case "weekly":
         case "monthly":
         case "startup":
@@ -227,6 +238,27 @@ class App extends Logger
             break; // logged above
         }
     }
+
+    generateTimelapse(d)
+    {
+        // exec python buildTimelapse in the background
+        // ./buildTimelapse.py \
+        //      /mnt/thumb1/capture/201Eakin/2019/06/12 \
+        //      /mnt/thumb1/capture/201Eakin/timelapse
+        let captureDir = this.buildCaptureDir(d);
+        let cmd = `buildTimelapse.py ${captureDir} ${this.timelapseDir}`;
+        exec(cmd, args, this.execOpts, 
+                (error, stdout, stderr) => {
+                    if(stderr || error)
+                        reject(stderr || error);
+                    else
+                    {
+                        resolve(stdout);
+                    }
+                }
+            );
+    }
+
 
     generateReport(routine, datestr, onDone)
     {

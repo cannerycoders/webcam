@@ -24,11 +24,14 @@ class App extends Logger
         this.hostname = os.hostname();
         try
         {
-            this.serverconfig = s.readFileSync("serverconfig.json");
+            let sc = fs.readFileSync("serverconfig.json");
+            this.serverconfig = JSON.parse(sc);
             this.config = this.serverconfig[this.hostname];
+            this.notice("loaded config" + JSON.stringify(this.config));
         }
         catch(err)
         {
+            console.error("invalid serverconfig: " + err);
             this.config =
             {
                 serverroot: ServerRoot,

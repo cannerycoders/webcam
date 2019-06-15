@@ -41,7 +41,10 @@ class App extends Logger
         this.exp.listen(Port, () =>
         {
             this.notice(`${AppName} listening on port ${Port}`);
-            this.performScheduledTasks("startup", new Date());
+            let routine = process.argv[2]; // node index.js nightly
+            if(!routine)
+                routine = "startup";
+            this.performScheduledTasks(routine, new Date());
             this.onIdle();
         });
     }
@@ -107,8 +110,8 @@ class App extends Logger
         if(min < IdleMinutes)
         {
             let routine;
-            if(hours == 8)
-                routine = "daily";
+            if(hours == 2)
+                routine = "nightly";
             else
             if(hours == 3)
             {
@@ -117,8 +120,6 @@ class App extends Logger
                 else
                 if(now.getDay() == 0)
                     routine = "weekly";
-                else
-                    routine = "daily";
             }
             else
                 routine = "hourly";
@@ -226,7 +227,7 @@ class App extends Logger
         console.info(subject);
         switch(routine)
         {
-        case "daily": 
+        case "nightly": 
             {
                 let yesterday = new Date(d);
                 yesterday.setDate(d.getDate() - 1);
@@ -258,7 +259,7 @@ class App extends Logger
         let args = ["buildTimelapse.py", captureDir, this.timelapseDir];
         execFile(cmd, args, {},
                 (error, stdout, stderr) => {
-                    this.log("buildTimelapse\n"+
+                    this.notice("buildTimelapse\n"+
                         `  stdout ${stdout}\n  ` +
                         `  stderr ${stderr}`)
                 }

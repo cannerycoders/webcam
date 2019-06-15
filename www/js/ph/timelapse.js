@@ -29,7 +29,11 @@ class Timelapse extends PageHandler
     BuildPage(contentdiv, navextra, daystr, searchParams)
     {  
         app.setDateVisibility(false);
+        this.modalDiv.style.display = "none";
 
+        // timelapse results in file list of two forms:
+        //  2019_06_12.jpg
+        //  2019_06_12.mp4
         app.sendGetRequest(`/api/gettimelapse`, (ret) => {
             let dir = ret.dir;
             let files = ret.files;
@@ -37,11 +41,13 @@ class Timelapse extends PageHandler
             for(let i=0;i<files.length;i++)
             {
                 let f = files[i];
-                if(f.indexOf(".thumb") != -1) continue;
+                if(f.indexOf(".jpg") == -1) continue;
                 let fp = `${dir}/${f}`;
-                let fpt = fp + ".thumb";
                 html += "<div>";
-                html += `<img class='thumbnail hoverable clk' src='${fpt}'/>`;
+                html += `<img class='thumbnail hoverable clk' src='${fp}'/>`;
+                html += "<div class='caption'>" +
+                            `${f.split(".")[0].replace(/_/g, "/")}`+
+                        "</div>";
                 html += "</div>";
             }
             contentdiv.innerHTML = html;
@@ -55,15 +61,19 @@ class Timelapse extends PageHandler
 
     onClick(i)
     {
-        let vidurl = i.src.replace(/.thumb/, ".mp4");
-        let i = vidurl.lastIndexOf("/") + 1; // 0 if fail, which is good
-        let caption = vidurl.slice(i); // XXX: fixup day in year
-        this.modalDiv.style.display = "block";
+        let vidurl = i.src.replace(/.jpg/, ".mp4");
+        let j = vidurl.lastIndexOf("/") + 1; // 0 if fail, which is good
+        let filenm = vidurl.slice(j); // XXX: fixup day in year
+        //  2019_06_12.jpg
+        let fields = filenm.split(".")[0].split("_");
+        let date = new Date(fields.join("/"))
+        let caption = date.toDateString();
         this.modalContainer.innerHTML = 
             `<video class='modal-content' controls>` + 
                 `<source src='${vidurl}' type='video/mp4'>` +
             "</video>";
         this.caption.innerHTML = caption;
+        this.modalDiv.style.display = "block";
     }
 
 }

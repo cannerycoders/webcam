@@ -28,9 +28,10 @@ class Moments extends PageHandler
 
     BuildPage(contentdiv, navextra, daystr, searchParams)
     {  
-        // getday returns list of files
         app.setDateVisibility(true);
+        this.modalDiv.style.display = "none";
 
+        // getday returns list of files
         app.sendGetRequest(`/api/getday?day=${daystr}`, (ret) => {
             let dir = ret.dir;
             let files = ret.files;

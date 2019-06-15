@@ -7,7 +7,7 @@
     },
 
     "dbcam8": {
-        "title": "Cannery Cove Cam",
+        "title": "CanneryCove Cam",
         "serverroot": "/mnt/thumb1",
         "captureroot": "/mnt/thumb1/capture",
         "prefix": "CanneryCove"

@@ -19,10 +19,12 @@ export class App
         this.openURL = null;
         this.currentPage = null;
 
-        this.phList = []; // an ordered (left->right) collection of handlers
+        // phList: an ordered (left->right) collection of handlers
+        this.phList = []; 
         this.phList.push(new Moments());
         this.phList.push(new Timelapse());
         this.phList.push(new Now());
+        // phMap: locate handler by name
         this.phMap = {};
         for(let i=0;i<this.phList.length;i++)
         {
@@ -90,6 +92,13 @@ export class App
     // onReady is invoked after all scripts have finished loading.
     onReady()
     { 
+        app.sendGetRequest(`/api/gettitle`, (ret) => {
+            if(ret.title)
+            {
+                document.getElementById("navtitle").innerHTML = 
+                                                ret.title;
+            }
+        });
         window.onbeforeunload = this.onBeforeUnload.bind(this);
 
         let div = document.getElementById("navtabs");
@@ -223,7 +232,8 @@ export class App
     updateNav()
     {
         $("nav").find(".active").removeClass("active");
-        // find the parent of the <a> whose href endswith the current page.
+        // find the parent of the <a> whose href ends with the 
+        // current page.
         $("nav a[href$='" + this.currentPage + "']").parent()
                                                     .addClass("active");
     }
@@ -311,7 +321,7 @@ export class App
     }
 
 
-    // ajax utils -------------------------------------------------------
+    // ajax utils ----------------------------------------------------
     sendGetRequest(url, responseHandler, isJSON=true)
     {
         var req = new XMLHttpRequest();
@@ -332,8 +342,8 @@ export class App
                 try
                 {
                     let val = JSON.parse(request.responseText);
-                    // Looking for variable substitions during layout loads?
-                    //  see app.interpolate
+                    // Looking for variable substitions during layout 
+                    // loads? see app.interpolate
                     responseHandler(val);
                 }
                 catch(e)

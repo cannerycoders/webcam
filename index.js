@@ -6,11 +6,11 @@ let ImgCmp = require("./imgcmp.js");
 let Mailer = require("./mailer.js");
 let fs = require("fs");
 let os = require("os");
-let {exec} = require("child_process");
+let {exec, execFile} = require("child_process");
 
 const Port = 8180;
 const AppName = "webcam";
-const IdleMinutes = 5;
+const IdleMinutes = 3;
 const IdleInterval = IdleMinutes * 60 * 1000;
 const ServerRoot = "/mnt/thumb1";
 const CaptureRoot = "/mnt/thumb1/capture";
@@ -52,9 +52,9 @@ class App extends Logger
         // 
         // console.log(`path: ${JSON.stringify(req.path)}`); 
         //  "/api/getday"
-        console.log(`url: ${JSON.stringify(req.url)}`);
+        // console.log(`url: ${JSON.stringify(req.url)}`);
         //  "/api/getday?day=061219
-        console.log(`query: ${JSON.stringify(req.query)}`);
+        // console.log(`query: ${JSON.stringify(req.query)}`);
         //  {"day": "061319"}
         // console.log(`params: ${JSON.stringify(req.params)}`);
         //  {"0": ""}
@@ -107,12 +107,15 @@ class App extends Logger
         if(min < IdleMinutes)
         {
             let routine;
+            if(hours == 8)
+                routine = "daily";
+            else
             if(hours == 3)
             {
-                if(a.getDate() == 1)
+                if(now.getDate() == 1)
                     routine = "monthly";
                 else
-                if(a.getDay() == 0)
+                if(now.getDay() == 0)
                     routine = "weekly";
                 else
                     routine = "daily";
@@ -223,8 +226,13 @@ class App extends Logger
         console.info(subject);
         switch(routine)
         {
-        case "daily": // fall-thru
-            this.generateTimelapse(new Date().setDate(d.getDate() -1))
+        case "daily": 
+            {
+                let yesterday = new Date(d);
+                yesterday.setDate(d.getDate() - 1);
+                this.generateTimelapse(yesterday);
+            }
+            // fall-thru
         case "weekly":
         case "monthly":
         case "startup":
@@ -239,26 +247,23 @@ class App extends Logger
         }
     }
 
-    generateTimelapse(d)
+    generateTimelapse(date)
     {
         // exec python buildTimelapse in the background
         // ./buildTimelapse.py \
         //      /mnt/thumb1/capture/201Eakin/2019/06/12 \
         //      /mnt/thumb1/capture/201Eakin/timelapse
-        let captureDir = this.buildCaptureDir(d);
-        let cmd = `buildTimelapse.py ${captureDir} ${this.timelapseDir}`;
-        exec(cmd, args, this.execOpts, 
+        let captureDir = this.buildCaptureDir(date);
+        let cmd = "python3"
+        let args = ["buildTimelapse.py", captureDir, this.timelapseDir];
+        execFile(cmd, args, {},
                 (error, stdout, stderr) => {
-                    if(stderr || error)
-                        reject(stderr || error);
-                    else
-                    {
-                        resolve(stdout);
-                    }
+                    this.log("buildTimelapse\n"+
+                        `  stdout ${stdout}\n  ` +
+                        `  stderr ${stderr}`)
                 }
             );
     }
-
 
     generateReport(routine, datestr, onDone)
     {

@@ -6,10 +6,10 @@ class Moments extends PageHandler
     constructor()
     {
         super();
-        this.modalDiv = document.getElementById("imgmodalDiv");
-        this.caption = document.getElementById("imgmodalCaption");
-        this.modalImg = document.getElementById("imgmodal");
-        this.modalClose = document.getElementById("imgmodalClose");
+        this.modalDiv = document.getElementById("modalDiv");
+        this.caption = document.getElementById("modalCaption");
+        this.modalContainer = document.getElementById("modalContainer");
+        this.modalClose = document.getElementById("modalClose");
         this.modalClose.onclick = function()
         {
             this.modalDiv.style.display = "none";
@@ -42,23 +42,29 @@ class Moments extends PageHandler
                 let fp = `${dir}/${f}`;
                 let fpt = fp + ".thumb";
                 html += "<div>";
-                html += `<img class='thumbnail hoverable clickable' src='${fpt}'/>`;
+                html += `<img class='thumbnail hoverable clk' src='${fpt}'/>`;
                 html += "</div>";
             }
             contentdiv.innerHTML = html;
 
-            document.querySelectorAll(".clickable").forEach((i) =>
+            document.querySelectorAll(".clk").forEach((i) =>
             {
-                i.onclick = this.imgClick.bind(this, i);
+                i.onclick = this.onClick.bind(this, i);
             });
         });
     }
 
-    imgClick(i)
+    onClick(i)
     {
+        let imgurl = i.src.replace(/.thumb/, "");
+        let imgi = imgurl.lastIndexOf("/") + 1; // 0 if fail, which is good
+        let imgcaption = imgurl.slice(imgi)
+                            .split(".")[0]
+                            .replace(/_/, ":");
         this.modalDiv.style.display = "block";
-        this.modalImg.src = i.src.replace(/.thumb/, "");
-        this.caption.innerHTML = this.modalImg.src;
+        this.modalContainer.innerHTML = 
+                    `<img class='modal-content' src='${imgurl}' />`;
+        this.caption.innerHTML = imgcaption;
     }
 
 }

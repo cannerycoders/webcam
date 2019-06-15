@@ -14,6 +14,7 @@ interface.
 
 ## config issues
 
+* need to install ffmpeg for timelapse support
 * need to statically mount a larger disk drive.  We currently
   employ a exfat usb stick. Auto-mounting instructions :
 

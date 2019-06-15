@@ -14,17 +14,35 @@ const IdleMinutes = 3;
 const IdleInterval = IdleMinutes * 60 * 1000;
 const ServerRoot = "/mnt/thumb1";
 const CaptureRoot = "/mnt/thumb1/capture";
-const Prefix = "201Eakin";
+const Prefix = "CanneryCove";
 
 class App extends Logger
 {
-    constructor(captureRoot=CaptureRoot, prefix=Prefix)
+    constructor()
     {
         super(os.hostname());
         this.hostname = os.hostname();
-        this.captureRoot = captureRoot;
-        this.prefix = prefix;
-        this.timelapseDir = `${captureRoot}/${prefix}/timelapse`;
+        try
+        {
+            this.serverconfig = s.readFileSync("serverconfig.json");
+            this.config = this.serverconfig[this.hostname];
+        }
+        catch(err)
+        {
+            this.config =
+            {
+                serverroot: ServerRoot,
+                captureroot: CaptureRoot,
+                prefix: Prefix,
+                title: Prefix,
+            }
+            this.config.serveroot = ServerRoot;
+            this.error(err);
+        }
+        this.captureRoot = this.config.captureroot;
+        this.prefix = this.config.prefix;
+        this.timelapseDir = 
+                `${this.captureRoot}/${this.prefix}/timelapse`;
         this.exp = express();
         this.exp.use(express.static("www"));
         this.exp.use("/capture", express.static(this.captureRoot));
@@ -38,6 +56,7 @@ class App extends Logger
     {
         this.exp.get("/api/getday*", this.getinfo.bind(this));
         this.exp.get("/api/gettimelapse", this.getinfo.bind(this));
+        this.exp.get("/api/gettitle", this.getinfo.bind(this));
         this.exp.listen(Port, () =>
         {
             this.notice(`${AppName} listening on port ${Port}`);
@@ -64,6 +83,10 @@ class App extends Logger
         let result = {};
         switch(req.path)
         {
+        case "/api/gettitle":
+            result.query = req.path;
+            result.title = this.config.title;
+            break;
         case "/api/gettimelapse":
             {   
                 let files = fs.readdirSync(this.timelapseDir);

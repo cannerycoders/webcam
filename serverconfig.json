@@ -1,0 +1,15 @@
+{
+    "dbcam7": {
+        "title": "Seatown Cam",
+        "serverroot": "/mnt/thumb1",
+        "captureroot": "/mnt/thumb1/capture",
+        "prefix": "Seatown"
+    },
+
+    "dbcam8": {
+        "title": "Cannery Cove Cam",
+        "serverroot": "/mnt/thumb1",
+        "captureroot": "/mnt/thumb1/capture",
+        "prefix": "CanneryCove"
+    }
+}

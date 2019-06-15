@@ -12,6 +12,12 @@ interface.
 * currently we use a raspi3 build of 
 [perceptualdiff](https://github.com/myint/perceptualdiff).
 
+this requires that you install libfreeimage-dev
+
+```sh
+sudo apt-get install libfreeimage-dev
+```
+
 ## config issues
 
 * need to install ffmpeg for timelapse support

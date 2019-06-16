@@ -253,20 +253,18 @@ nav .fas.primary
 
 .navtab.active a
 {
-    color: green;
-    /* text-decoration: overline;*/
-    font-weight: bold;
+    color: rgb(0, 200, 30);
 }
 
 .navtab:hover a
 {
-    color: rgb(122,200,25);
+    color: rgb(10, 150, 130);
 }
 
 .navtab > a
 {
+    color: rgb(10, 100, 30);
     text-decoration: none;
-    color: darkgreen;
 }
 
 #alert

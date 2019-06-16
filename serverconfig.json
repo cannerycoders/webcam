@@ -1,15 +1,17 @@
 {
     "dbcam7": {
-        "title": "Seatown Cam",
+        "title": "SeatownCam",
         "serverroot": "/mnt/thumb1",
         "captureroot": "/mnt/thumb1/capture",
-        "prefix": "Seatown"
+        "subdir": "Seatown",
+        "port": 8080
     },
 
     "dbcam8": {
-        "title": "CanneryCove Cam",
+        "title": "CanneryCoveCam",
         "serverroot": "/mnt/thumb1",
         "captureroot": "/mnt/thumb1/capture",
-        "prefix": "CanneryCove"
+        "subdir": "CanneryCove",
+        "port": 8080
     }
 }

@@ -1,20 +1,28 @@
+let http = require("http");
 let express = require("express");
+let ws = require("ws");
+let fs = require("fs");
+let os = require("os");
+let {exec, execFile} = require("child_process");
+
 let path = require("path");
 let Logger = require("./logger.js");
 let Picam = require("./picam.js");
 let ImgCmp = require("./imgcmp.js");
 let Mailer = require("./mailer.js");
-let fs = require("fs");
-let os = require("os");
-let {exec, execFile} = require("child_process");
 
-const Port = 8180;
+const DefaultServerConfig = 
+{
+    port: 8180,
+    serverroot: "/mnt/thumb1",
+    captureroot: "/mnt/thumb1/capture",
+    subdir: "CanneryCove",
+    title: "Cannery Cove",
+};
+
 const AppName = "webcam";
 const IdleMinutes = 3;
 const IdleInterval = IdleMinutes * 60 * 1000;
-const ServerRoot = "/mnt/thumb1";
-const CaptureRoot = "/mnt/thumb1/capture";
-const Prefix = "CanneryCove";
 
 class App extends Logger
 {
@@ -25,44 +33,80 @@ class App extends Logger
         try
         {
             let sc = fs.readFileSync("serverconfig.json");
-            this.serverconfig = JSON.parse(sc);
-            this.config = this.serverconfig[this.hostname];
-            this.notice("loaded config" + JSON.stringify(this.config));
+            let serverconfigs = JSON.parse(sc);
+            this.config = serverconfigs[this.hostname];
         }
         catch(err)
         {
             console.error("invalid serverconfig: " + err);
-            this.config =
-            {
-                serverroot: ServerRoot,
-                captureroot: CaptureRoot,
-                prefix: Prefix,
-                title: Prefix,
-            }
-            this.config.serveroot = ServerRoot;
-            this.error(err);
+            this.config = DefaultServerConfig;
         }
+        this.notice("using config: " + JSON.stringify(this.config));
+
         this.captureRoot = this.config.captureroot;
-        this.prefix = this.config.prefix;
+        this.subdir = this.config.subdir;
         this.timelapseDir = 
-                `${this.captureRoot}/${this.prefix}/timelapse`;
-        this.exp = express();
-        this.exp.use(express.static("www"));
-        this.exp.use("/capture", express.static(this.captureRoot));
+                `${this.captureRoot}/${this.subdir}/timelapse`;
+
         this.picam = new Picam();
         this.imgcmp = new ImgCmp();
         this.mailer = new Mailer();
         this.lastFileName = null;
+
+        this.exp = express();
+        this.exp.use(express.static("www"));
+        this.exp.use("/capture", express.static(this.captureRoot));
+        this.exp.get("/api/getday*", this.getinfo.bind(this));
+        this.exp.get("/api/gettimelapse", this.getinfo.bind(this));
+        this.exp.get("/api/gettitle", this.getinfo.bind(this));
+        this.server = http.createServer(this.exp);
+
+        this.wss = new ws.Server({server: this.server});
+        this.wss.on("connection", (ws, cnx) => {
+            ws.send(JSON.stringify({
+                action: "init",
+                width: this.picam.StreamSize[0],
+                height: this.picam.StreamSize[1],
+            }));
+            ws.on("message", msg => {
+                let args = msg.split(" ");
+                let action = args[0];
+                console.log("ws: incoming action " + action);
+                switch(action)
+                {
+                case "REQUESTSTREAM":
+                    this.picam.AddStreamClient(this.wss, msg, ws);
+                    break;
+                case "STOPSTREAM":
+                case "RESET":
+                    this.picam.RemoveStreamClient(this.wss, msg, ws);
+                    break;
+                default:
+                    console.warn("ws: unexpected message " + action);
+                }
+            });
+            ws.on("close", () => {
+                this.picam.RemoveStreamClient(this.wss, null, ws);
+            });
+            ws.on("error", err => {
+                console.error("ws error: ", err);
+            });
+            if(cnx)
+            {
+                let datestr = new Date().toLocaleString();
+                let msg = `ws connection url: ${cnx.url} ` +
+                          `from: ${cnx.connection.remoteAddress} ` +
+                          `on: ${datestr}`;
+                 console.log(msg);
+            }
+        });
     }
 
     go()
     {
-        this.exp.get("/api/getday*", this.getinfo.bind(this));
-        this.exp.get("/api/gettimelapse", this.getinfo.bind(this));
-        this.exp.get("/api/gettitle", this.getinfo.bind(this));
-        this.exp.listen(Port, () =>
+        this.server.listen(this.config.port, () =>
         {
-            this.notice(`${AppName} listening on port ${Port}`);
+            this.notice(`${AppName} listening on port ${this.config.port}`);
             let routine = process.argv[2]; // node index.js nightly
             if(!routine)
                 routine = "startup";
@@ -94,7 +138,8 @@ class App extends Logger
             {   
                 let files = fs.readdirSync(this.timelapseDir);
                 result.query = req.path;
-                result.dir = this.timelapseDir.slice(ServerRoot.length);
+                result.dir = this.timelapseDir.slice(
+                                this.config.serverroot.length);
                 result.files = files;
             }
             break;
@@ -115,7 +160,7 @@ class App extends Logger
                 let dir = this.buildCaptureDir(date);
                 let files = fs.readdirSync(dir);
                 result.query = req.path;
-                result.dir = dir.slice(ServerRoot.length);
+                result.dir = dir.slice(this.config.serverroot.length);
                 result.files = files;
             }
             break; 
@@ -217,7 +262,7 @@ class App extends Logger
         year = date.getFullYear(); 
         month = ("00" + (date.getMonth()+1)).slice(-2);
         day = ("00" + date.getDate()).slice(-2);
-        return `${this.captureRoot}/${this.prefix}/${year}/${month}/${day}`;
+        return `${this.captureRoot}/${this.subdir}/${year}/${month}/${day}`;
     }
     
     buildFilename(asThumbnail=false)

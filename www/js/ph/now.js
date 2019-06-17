@@ -43,13 +43,13 @@ class Now extends PageHandler
             "<button type='button' id='streamControl'>Start Stream</button>" +
             "<span id='streamStatus'></span>" +
             "</div>" +
-            "<canvas class='cameraViewImg' id='videocanvas'></canvas>" +
+            "<canvas id='videocanvas'></canvas>" +
         "</div>";
         navextra.innerHTML = "";
 
         this.buttonElem = document.getElementById("streamControl");
         this.buttonElem.onclick = this._onStartStop.bind(this);
-        this.canvElem = document.getElementById("videocanvas");
+        this.canvasElem = document.getElementById("videocanvas");
         this.statusElem = document.getElementById("streamStatus");
     }
 
@@ -60,7 +60,7 @@ class Now extends PageHandler
         {
             this.buttonElem.innerText = "Stop Stream";
             if(!this.wsplayer)
-                this.wsplayer = new WSAvcPlayer(this.canvElem, "webgl", 1, 35);
+                this.wsplayer = new WSAvcPlayer(this.canvasElem, "webgl",1,35);
             this.streamStart = new Date();
             let url = "ws://"+window.location.hostname+":"+window.location.port;
             this.wsplayer.connect(url, this._onWSEvent.bind(this));
@@ -106,6 +106,7 @@ class Now extends PageHandler
     _onWSCanvasReady(w, h)
     {
         this.statusElem.textContent = `canvas ready ${w}x${h}`;
+        this.canvasElem.className = "cameraViewImg";
     }
 
     _onReset()

@@ -11,6 +11,7 @@
   "dependencies": {
     "express": "^4.17.1",
     "nodemailer": "^6.2.1",
+    "pigpio": "^1.2.3",
     "stream-split": "^1.1.0",
     "ws": "^7.0.0"
   }

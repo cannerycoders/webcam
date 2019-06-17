@@ -95,6 +95,7 @@ export class App
         app.sendGetRequest(`/api/gettitle`, (ret) => {
             if(ret.title)
             {
+                document.title = ret.title;
                 document.getElementById("navtitle").innerHTML = 
                                                 ret.title;
             }

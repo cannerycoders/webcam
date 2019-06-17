@@ -13,8 +13,10 @@ class Mailer
             }
         });
 
-        this.htmlTemplate = "<html><head><title><h3>${title}</h3></title></head>" +
-            "<body><table><tr><td><pre>${msg}</pre></td></tr></table></body></html>";
+        this.htmlTemplate = 
+          "<html><head><title><h3>${title}</h3></title></head><body>" +
+              "<table><tr><td><pre>${msg}</pre></td></tr></table>"+
+          "</body></html>";
 
         this.mailOptions = {
             from:'"Cannery Coders Mailer" <cannerycoders@gmail.com>',
@@ -39,9 +41,9 @@ class Mailer
         this.transporter.sendMail(this.mailOptions, 
             (error, info) => {
                 if (error) 
-                    console.log(JSON.stringify(error, null, 2));
+                    console.warn(JSON.stringify(error, null, 2));
                 else 
-                    console.log(JSON.stringify(info,null, 2));
+                    console.info("mail sent to " + info.accepted);
             }); 
     }
 

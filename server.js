@@ -41,7 +41,7 @@ class App extends Logger
             console.error("invalid serverconfig: " + err);
             this.config = DefaultServerConfig;
         }
-        this.notice("using config: " + JSON.stringify(this.config));
+        this.notice("Using config\n" + JSON.stringify(this.config, null, 2));
 
         this.captureRoot = this.config.captureroot;
         this.subdir = this.config.subdir;

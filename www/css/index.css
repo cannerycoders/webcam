@@ -470,8 +470,7 @@ input[type="text"]
 
 .cameraViewImg
 {
-    width: 640px;
-    height: 480px;
+    width: 97%;
     background-color: black;
     margin: 10px;
 }

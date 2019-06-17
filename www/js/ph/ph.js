@@ -10,9 +10,11 @@ export class PageHandler
         return this.GetId();
     } 
 
-    Cleanup() 
-    { 
-    } 
+    Cleanup() // optionally overridden
+    {} 
+
+    OnIdle(now) // optionally overridden
+    {} 
 
     GetURL()  // optionally overridden
     { 

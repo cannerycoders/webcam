@@ -46,6 +46,11 @@ class PiCam
     {
         return new Promise((resolve, reject) => 
         {
+            if(this.IsStreaming())
+            {
+                reject("currently camera is streaming");
+                return;
+            }
             let args = this.captureArgs.slice();
             args.push(filename);
             if(asThumbnail)
@@ -64,11 +69,13 @@ class PiCam
 
     AddStreamClient(wss, msg, client)
     {
+        // msg include a command-line request.  for now, we
+        // ignore it and rely on our hardcoded streamArgs
         if(!this.streamer)
         {
             this.wss = wss; // web socket server keeps list of clients
-            this.streamer = spawn(this.streamCmd, this.streamArgs.join(" "));
-            this.sreamer.on("exit", function(code) {
+            this.streamer = spawn(this.streamCmd, this.streamArgs);
+            this.streamer.on("exit", function(code) {
                 this.streamer = null;
                 if(code != null)
                     console.warn("raspivid shutdown failure: " +code);
@@ -85,8 +92,25 @@ class PiCam
         // remove stream client may be a no-op since we support
         // multiple and these are managed by this.www.clients.
         // We haven't see an actual close unless msg == null.
-        if(!msg && !this.wss.client.hasNext())
+        console.log("remove stream client " + msg);
+        if(this.wss && this.countClients() == 0)
+        {
             console.log("picam senses that there are no ws clients");
+            this.EndStream();
+        }
+    }
+
+    countClients()
+    {
+        let count = 0;
+        if(this.wss.clients)
+            this.wss.clients.forEach( () => count++ );
+        return count;
+    }
+
+    IsStreaming()
+    {
+        return this.streamer != null;
     }
 
     EndStream()

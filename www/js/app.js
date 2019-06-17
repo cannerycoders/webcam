@@ -150,53 +150,11 @@ export class App
         }
     }
 
-    registerPageIdler(h, interval, clientdata)
-    {
-        if(!this.idleHandlerId)
-        {
-            this.idleHandlerId = 1;
-            this.idleHandlers = {};
-        }
-        let id = "idleId"+this.idleHandlerId++;
-        this.idleHandlers[id] = {
-            handler: h,
-            interval: interval,
-            lastfired: 0,
-            clientdata: clientdata
-        };
-
-        return id;
-    }
-
-    clearPageIdlers()
-    {
-        this.idleHandlers = {};
-        this.idleHandlerId = 1;
-    }
-
     onIdle()
     {
-        let now = Date.now();
-        if(this.idleHandlers)
-        {
-            for(let key in this.idleHandlers)
-            {
-                let h = this.idleHandlers[key];
-                if((now - h.interval) > h.lastfired)
-                {
-                    try
-                    {
-                        h.handler(h.clientdata);
-                    }
-                    catch(e)
-                    {
-                        app.error("idleHandler error:" + e);
-                    }
-                    h.lastfired = Date.now();
-                }
-            }
-        }
         const fps = 30;
+        let now = new Date();
+        this.phMap[this.currentPage].OnIdle(now);
         setTimeout(this.onIdle.bind(this), 1000/fps);
     }
 
@@ -244,7 +202,6 @@ export class App
         this.debug("loadPage " + page);
         if(this.currentPage && this.phMap[this.currentPage])
             this.phMap[this.currentPage].Cleanup();
-        this.clearPageIdlers();
         this.currentPage = page;
         this.refreshPage();
         this.updateNav();

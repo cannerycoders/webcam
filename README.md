@@ -18,12 +18,28 @@ this requires that you install libfreeimage-dev
 sudo apt-get install libfreeimage-dev
 ```
 
-## config issues
+## convert jpg to mp4
 
 * need to install ffmpeg for timelapse support
+    `sudo apt-get install ffmpeg`
+
+(tried to use the opencv video capability, didn't work with frc image).
+
+## control camera servo
+
+* install pigpio and node binding, pigpio
+
+```sh
+% sudo apt-get install pigpio
+% npm install pigpio
+```
+
+read [docs](http://abyz.me.uk/rpi/pigpio/) for api details 
+
+## thumbdir config issues
+
 * need to statically mount a larger disk drive.  We currently
   employ a exfat usb stick. Auto-mounting instructions :
-
 
   ```sh
   % sudo apt-get install exfat-fuse

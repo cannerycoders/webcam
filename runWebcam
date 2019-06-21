@@ -1,0 +1,8 @@
+#!/bin/sh
+
+echo "runWebcam"
+killall node
+
+echo  "..sleeping 2"
+sleep 2
+node ./server.js

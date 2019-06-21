@@ -7,11 +7,19 @@
         "port": 8080
     },
 
-    "dbcam8": {
+    "cannerycove": {
         "title": "CanneryCoveCam",
         "serverroot": "/mnt/thumb1",
         "captureroot": "/mnt/thumb1/capture",
         "subdir": "CanneryCove",
+        "port": 8080
+    },
+
+    "webcamIR": {
+        "title": "CanneryCoveCam",
+        "serverroot": "/mnt/thumb1",
+        "captureroot": "/mnt/thumb1/capture",
+        "subdir": "webcamIR",
         "port": 8080
     }
 }

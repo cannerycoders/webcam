@@ -58,3 +58,17 @@ STICKY_OTHER_WRITABLE 40;31;01
 OTHER_WRITABLE 40;31;01
 % eval $(dircolors ~/.dircolors0
 ```
+
+## servo control for camera positioning
+
+* we use pigpio library since it's "more real time" which is important for pwm.
+    * downside is that it must run as root, but it does support a daemon mode
+    * daemon listen on port 8888 for commands
+    * daemon installation:
+        ```sh
+        sudo systemctl enable|disable pigpiod
+        sudo systemctl start|stop pigpiod
+        ```
+        * parameter/ctl file is here: /lib/systemd/system/pigpiod.service
+* pinouts [here](https://elinux.org/RPi_Low-level_peripherals)
+

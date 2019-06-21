@@ -13,7 +13,7 @@
         "captureroot": "/mnt/thumb1/capture",
         "subdir": "CanneryCove",
         "port": 8080
-    }
+    },
 
     "webcamIR": {
         "title": "CanneryCoveCam",

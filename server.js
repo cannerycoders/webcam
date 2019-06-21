@@ -18,6 +18,7 @@ const DefaultServerConfig =
     captureroot: "/mnt/thumb1/capture",
     subdir: "CanneryCove",
     title: "Cannery Cove",
+    pantilt: false,
 };
 
 const AppName = "webcam";
@@ -59,6 +60,7 @@ class App extends Logger
         this.exp.get("/api/getday*", this.getinfo.bind(this));
         this.exp.get("/api/gettimelapse", this.getinfo.bind(this));
         this.exp.get("/api/gettitle", this.getinfo.bind(this));
+        this.exp.get("/api/movecam", this.setinfo.bind(this));
         this.server = http.createServer(this.exp);
 
         this.wss = new ws.Server({server: this.server});
@@ -153,7 +155,10 @@ class App extends Logger
                     if(req.query.day)
                         date = new Date(req.query.day.match(/..?/g).join("/"));
                     else
-                        console.warn("invalid query");
+                    {
+                        console.warn("invalid getday " +
+                                    JSON.stringify(req.query));
+                    }
                 }
                 if(!date)
                     date = new Date(); // now
@@ -169,6 +174,39 @@ class App extends Logger
             break; 
         }
         res.json(result);
+    }
+
+    setinfo(req, res)
+    {
+        let result = {};
+        if(this.config.pantilt)
+        {
+            let val = req.query.value;
+            switch(req.path)
+            {
+            case "/api/movecam":
+                if(req.query.pan && req.query.tilt)
+                { 
+                    this.doPanTilt(req.query.pan, req.query.tilt, (msg)=>{
+                        result.query = req.path;
+                        result.msg = msg;
+                        res.json(result);
+                    });
+                }
+                else
+                {
+                    console.warn("invalid movecam "+JSON.stringify(req.query));
+                    res.json(result);
+                }
+                break;
+            default:
+                res.json(result);
+                break;
+            }
+        }
+        // else we didn't write to res so error
+        else
+            res.json(result);
     }
 
     onIdle()
@@ -348,6 +386,26 @@ class App extends Logger
             {
                 let msg = `webcam ${this.hostname} report ${datestr}\n\n`;
                 msg += `${cmd}\n\n`;
+                msg += "<code>\n";
+                if(stdout.length)
+                    msg += `${stdout}\n\n`;
+                if(stderr.length)
+                    msg += `### stderr ####\n\n${stderr}\n`;
+                msg += "</code>\n";
+                onDone(msg);
+            }
+        });
+    }
+
+    doPanTilt(pan, tilt, onDone)
+    {
+        let cmd = `./bin/pantilt ${pan} ${tilt}`;
+        exec(cmd, {}, (error, stdout, stderr) => {
+            if(stderr || error)
+                console.error(`${error} ${stderr}`);
+            else
+            {
+                let msg = `${cmd}\n\n`;
                 msg += "<code>\n";
                 if(stdout.length)
                     msg += `${stdout}\n\n`;

@@ -4,7 +4,8 @@
         "serverroot": "/mnt/thumb1",
         "captureroot": "/mnt/thumb1/capture",
         "subdir": "Seatown",
-        "port": 8080
+        "port": 8080,
+        "pantilt": false
     },
 
     "cannerycove": {
@@ -12,7 +13,8 @@
         "serverroot": "/mnt/thumb1",
         "captureroot": "/mnt/thumb1/capture",
         "subdir": "CanneryCove",
-        "port": 8080
+        "port": 8080,
+        "pantilt": false
     },
 
     "webcamIR": {
@@ -20,6 +22,7 @@
         "serverroot": "/mnt/thumb1",
         "captureroot": "/mnt/thumb1/capture",
         "subdir": "webcamIR",
-        "port": 8080
+        "port": 8080,
+        "pantilt": true
     }
 }

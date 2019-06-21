@@ -44,9 +44,11 @@ public:
 
     void SetTarget(int t)
     {
-        this->pwTarget = t;
         this->pwInitial = get_servo_pulsewidth(this->ctx, this->pin);
         this->pwCurrent = this->pwInitial;
+        this->pwTarget = t;
+        if(this->pwTarget == 0)
+            this->pwTarget = this->pwCurrent;
         printf("%s starting at: %d\n", this->nm, this->pwInitial);
     }
 
@@ -103,7 +105,7 @@ setSignalHandler(int signum, signalFunc_t sigHandler)
 static void
 usage(char const*nm)
 {
-    printf("%s: panTarget tiltTarget\n", nm);
+    printf("%s: panTarget tiltTarget\n  0 means no change\n", nm);
 }
 
 int 
@@ -116,7 +118,7 @@ main(int argc, char *argv[])
     }
     int panTarget = atoi(argv[1]);
     int tiltTarget = atoi(argv[2]);
-    if(panTarget <= 0 || tiltTarget <=0)
+    if(panTarget < 0 || tiltTarget < 0)
     {
         usage(argv[0]);
         exit(-1);

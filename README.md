@@ -71,4 +71,10 @@ OTHER_WRITABLE 40;31;01
         ```
         * parameter/ctl file is here: /lib/systemd/system/pigpiod.service
 * pinouts [here](https://elinux.org/RPi_Low-level_peripherals)
+* to prevent low-power warnings, power the servos via separate usb brick.
+  * tie server-usb ground to raspi ground on GPIO GND pin  (3rd pin down from top-right)
+  * Each servo gets a signal AND ground from PI 
+    * PAN: GPIO-13 (4th pin from bottom left) and GND (4th from bottom right)
+    * TILT: GPIO-5 and GND (6th pin from bottom left and right)
+    (pan and tilt are assumed by pantilt.cpp)
 

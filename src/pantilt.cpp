@@ -13,8 +13,11 @@ pantilt targetPan targetTilt
 
 */
 
-#define MIN_WIDTH 1000
-#define MAX_WIDTH 2000
+#define k_MinPulseWidth 1000
+#define k_MaxPulseWidth 2000
+
+#define k_PanGpio 13
+#define k_TiltGpio 5
 
 class Servo
 {
@@ -149,8 +152,8 @@ main(int argc, char *argv[])
     int ctx = pigpio_start(NULL, NULL);
     if (ctx < 0) return -1;
 
-    Servo pan(ctx, "pan", 13, 800, 2200);
-    Servo tilt(ctx, "tilt", 5, 1000, 2200);
+    Servo pan(ctx, "pan", k_PanGpio, k_MinPulseWidth, k_MaxPulseWidth);
+    Servo tilt(ctx, "tilt", k_TiltGpio, k_MinPulseWidth, k_MaxPulseWidth);
     setSignalHandler(SIGINT, stop);
     pan.SetTarget(panTarget);
     tilt.SetTarget(tiltTarget);

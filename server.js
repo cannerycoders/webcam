@@ -53,6 +53,7 @@ class App extends Logger
         this.imgcmp = new ImgCmp();
         this.mailer = new Mailer();
         this.lastFileName = null;
+        this.panTiltProcesss = null;
 
         this.exp = express();
         this.exp.use(express.static("www"));
@@ -429,17 +430,32 @@ class App extends Logger
 
     doPanTilt(pan, tilt, onDone)
     {
+        // only want one running at a time.
+        console.info(`doPanTilt request: ${pan} ${tilt}`);
+        if(this.panTiltProcess)
+        {
+            onDone(true, "panning in progress"); // error
+            return;
+        }
         let cmd = `./bin/pantilt ${pan} ${tilt}`;
-        exec(cmd, {}, (error, stdout, stderr) => {
+        this.panTiltProcess = exec(cmd, {
+            timeout: 8000, // 8 seconds to get to target (worst-case measured > 5s)
+            killSignal: "SIGINT",
+        }, (error, stdout, stderr) => {
             if(stderr || error)
             {
-                console.error(`${error} ${stderr}`);
+                if(this.panTiltProcess.killed)
+                    console.error(`${error} (killed)`);
+                else
+                    console.error(`${error} ${stderr}`);
                 onDone(true, stderr);
             }
             else
             {
+                console.info(`${stdout}`);
                 onDone(false, stdout);
             }
+            this.panTiltProcess = null;
         });
     }
 }

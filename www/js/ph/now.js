@@ -147,14 +147,14 @@ class Now extends PageHandler
         if(pan >= 0)
         {
             this.panTxt.innerText = "pan "+
-                                ("00"+(100-app.serverInfo.pan)).slice(-3);
+                                ("00"+(100-pan)).slice(-3);
             if(updateSlider)
                 this.panSlider.value = pan;
         }
         if(tilt >= 0)
         {
             this.tiltTxt.innerText = "tilt "+
-                               ("00" + app.serverInfo.tilt).slice(-3);
+                               ("00" + tilt).slice(-3);
             if(updateSlider)
                 this.tiltSlider.value = tilt;
         }

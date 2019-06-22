@@ -59,7 +59,8 @@ class App extends Logger
         this.exp.use("/capture", express.static(this.captureRoot));
         this.exp.get("/api/getday*", this.getinfo.bind(this));
         this.exp.get("/api/gettimelapse", this.getinfo.bind(this));
-        this.exp.get("/api/gettitle", this.getinfo.bind(this));
+        this.exp.get("/api/gettitle", this.getinfo.bind(this)); // deprecated
+        this.exp.get("/api/getinfo", this.getinfo.bind(this));
         this.exp.get("/api/movecam", this.setinfo.bind(this));
         this.server = http.createServer(this.exp);
 
@@ -133,8 +134,32 @@ class App extends Logger
         switch(req.path)
         {
         case "/api/gettitle":
+        case "/api/getinfo":
             result.query = req.path;
             result.title = this.config.title;
+            result.pantilt = this.config.pantilt;
+            if(result.pantilt)
+            {
+                this.doPanTilt(-1, -1, (err, msg) => {
+                    if(err)
+                    {
+                        result.err = true;
+                        result.msg = msg;
+                    }
+                    else
+                    {
+                        // expect message of form:
+                        //   pan  0 -> 0 (pw pw)
+                        //  tilt  0 -> 0 (pw pw)
+                        let lines = msg.split("\n");
+                        result.pan = lines[0].split(" ")[1];
+                        result.tilt = lines[1].split(" ")[1];
+                    }
+                    res.json(result);
+                });
+            }
+            else
+                res.json(result);
             break;
         case "/api/gettimelapse":
             {   
@@ -143,6 +168,7 @@ class App extends Logger
                 result.dir = this.timelapseDir.slice(
                                 this.config.serverroot.length);
                 result.files = files;
+                res.json(result);
             }
             break;
         case "/api/today":
@@ -167,13 +193,14 @@ class App extends Logger
                 result.query = req.path;
                 result.dir = dir.slice(this.config.serverroot.length);
                 result.files = files;
+                res.json(result);
             }
             break; 
         default:
             console.error("invalid getinfo request " + msg);
+            res.json(result);
             break; 
         }
-        res.json(result);
     }
 
     setinfo(req, res)
@@ -187,8 +214,9 @@ class App extends Logger
             case "/api/movecam":
                 if(req.query.pan && req.query.tilt)
                 { 
-                    this.doPanTilt(req.query.pan, req.query.tilt, (msg)=>{
+                    this.doPanTilt(req.query.pan, req.query.tilt, (err, msg)=>{
                         result.query = req.path;
+                        result.err = err;
                         result.msg = msg;
                         res.json(result);
                     });
@@ -196,6 +224,8 @@ class App extends Logger
                 else
                 {
                     console.warn("invalid movecam "+JSON.stringify(req.query));
+                    result.err = true;
+                    result.msg("invalid movecam");
                     res.json(result);
                 }
                 break;
@@ -402,17 +432,13 @@ class App extends Logger
         let cmd = `./bin/pantilt ${pan} ${tilt}`;
         exec(cmd, {}, (error, stdout, stderr) => {
             if(stderr || error)
+            {
                 console.error(`${error} ${stderr}`);
+                onDone(true, stderr);
+            }
             else
             {
-                let msg = `${cmd}\n\n`;
-                msg += "<code>\n";
-                if(stdout.length)
-                    msg += `${stdout}\n\n`;
-                if(stderr.length)
-                    msg += `### stderr ####\n\n${stderr}\n`;
-                msg += "</code>\n";
-                onDone(msg);
+                onDone(false, stdout);
             }
         });
     }

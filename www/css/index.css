@@ -200,8 +200,16 @@ nav
     font-size: 44px;
 }
 
-.navextra
+#navextra
 {
+    font-size: 12px;
+}
+
+#navextra input[type="range"]
+{
+    width: 80px;
+    height: 15px;
+    margin-right: 14px;
 }
 
 #navlogo 

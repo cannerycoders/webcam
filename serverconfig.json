@@ -18,7 +18,7 @@
     },
 
     "webcamIR": {
-        "title": "CanneryCoveCam",
+        "title": "CanneryCoveIR",
         "serverroot": "/mnt/thumb1",
         "captureroot": "/mnt/thumb1/capture",
         "subdir": "webcamIR",

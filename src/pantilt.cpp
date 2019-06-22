@@ -28,6 +28,18 @@ private:
     int pwCurrent;
     int pwTarget;
 
+    int toPct(int val)
+    {
+        return int(100 * (val - this->pwRange[0]) / 
+                         (this->pwRange[1] - this->pwRange[0]));
+    }
+
+    int fromPct(int val)
+    {
+        return this->pwRange[0] +
+               int(val/100. * (this->pwRange[1] - this->pwRange[0]));
+    }
+
 public:
     Servo(int ctx, char const *nm, int pin, int minPW, int maxPW)
     {
@@ -42,14 +54,23 @@ public:
         this->pwDelta = 10;
     }
 
-    void SetTarget(int t)
+    void PrintSummary()
+    {
+        printf("%s %d -> %d (%d -> %d)\n", this->nm, 
+            this->toPct(this->pwInitial), 
+            this->toPct(this->pwTarget),
+            this->pwInitial, this->pwTarget
+            );
+    }
+
+    void SetTarget(int pct)
     {
         this->pwInitial = get_servo_pulsewidth(this->ctx, this->pin);
         this->pwCurrent = this->pwInitial;
-        this->pwTarget = t;
-        if(this->pwTarget == 0)
+        if(pct == -1)
             this->pwTarget = this->pwCurrent;
-        printf("%s starting at: %d\n", this->nm, this->pwInitial);
+        else
+            this->pwTarget = this->fromPct(pct);
     }
 
     void Move()
@@ -84,11 +105,11 @@ public:
 
 };
 
-static bool run = true;
+static bool s_run = true;
 
 static void stop(int signum)
 {
-   run = false;
+   s_run = false;
 }
 
 typedef void (*signalFunc_t) (int signum);
@@ -105,20 +126,21 @@ setSignalHandler(int signum, signalFunc_t sigHandler)
 static void
 usage(char const*nm)
 {
-    printf("%s: panTarget tiltTarget\n  0 means no change\n", nm);
+    printf("%s panPct tiltPct\n (0, 100), -1 means no change\n", nm);
 }
 
 int 
 main(int argc, char *argv[])
 {
-    if(argc != 3)
+    if(argc != 3) 
     {
         usage(argv[0]);
         exit(1);
     }
     int panTarget = atoi(argv[1]);
     int tiltTarget = atoi(argv[2]);
-    if(panTarget < 0 || tiltTarget < 0)
+    if(panTarget > 100 || tiltTarget > 100 ||
+       panTarget < -10 || tiltTarget < -10)
     {
         usage(argv[0]);
         exit(-1);
@@ -132,16 +154,15 @@ main(int argc, char *argv[])
     setSignalHandler(SIGINT, stop);
     pan.SetTarget(panTarget);
     tilt.SetTarget(tiltTarget);
-    printf("%s moving servos to %d, %d", argv[0], panTarget, tiltTarget);
-    printf(", control C to stop.\n");
-    while(run && (!pan.Done() || !tilt.Done()))
+    pan.PrintSummary();
+    tilt.PrintSummary();
+    while(s_run && (!pan.Done() || !tilt.Done()))
     {
         pan.Move();
         tilt.Move();
         time_sleep(0.1);
     }
-
-    printf("\ntidying up\n");
+    // printf("\ntidying up\n");
     pigpio_stop(ctx);
     return 0;
 }

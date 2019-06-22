@@ -45,7 +45,34 @@ class Now extends PageHandler
             "</div>" +
             "<canvas id='videocanvas'></canvas>" +
         "</div>";
-        navextra.innerHTML = "";
+        if(app.serverInfo.pantilt)
+        {
+            navextra.innerHTML = "<span id='panTxt'>pan 000</span>"+
+                                 "<input id='panSlider' type='range'/> " +
+                                 "<span id='tiltTxt'>tilt 000</span>"+
+                                 "<input id='tiltSlider' type='range'/>";
+
+            this.panTxt = document.getElementById("panTxt");
+            this.panSlider = document.getElementById("panSlider");
+            this.tiltTxt = document.getElementById("tiltTxt");
+            this.tiltSlider = document.getElementById("tiltSlider");
+            this._updatePanTilt(app.serverInfo.pan, app.serverInfo.tilt);
+
+            panSlider.oninput = (evt) => {
+                panTxt.innerText = "pan "+("000"+evt.target.value).slice(-3);
+            }
+            panSlider.onchange = (evt) => {
+                this._changePanTilt(evt.target.value, -1);
+            };
+            tiltSlider.oninput = (evt) => {
+                tiltTxt.innerText = "tilt "+("000"+evt.target.value).slice(-3);
+            };
+            tiltSlider.onchange = (evt) => {
+                this._changePanTilt(-1, evt.target.value);
+            };
+        }
+        else
+            navextra.innerHTML = "";
 
         this.buttonElem = document.getElementById("streamControl");
         this.buttonElem.onclick = this._onStartStop.bind(this);
@@ -112,6 +139,34 @@ class Now extends PageHandler
     _onReset()
     {
         console.log("stream reset");
+    }
+
+
+    _updatePanTilt(pan, tilt, updateSlider=true)
+    {
+        if(pan >= 0)
+        {
+            this.panTxt.innerText = "pan "+
+                                ("00"+(100-app.serverInfo.pan)).slice(-3);
+            if(updateSlider)
+                this.panSlider.value = pan;
+        }
+        if(tilt >= 0)
+        {
+            this.tiltTxt.innerText = "tilt "+
+                               ("00" + app.serverInfo.tilt).slice(-3);
+            if(updateSlider)
+                this.tiltSlider.value = tilt;
+        }
+    }
+
+    _changePanTilt(pan, tilt)
+    {
+        if(pan != -1)
+            pan = (100 - pan);
+        app.sendGetRequest(`/api/movecam?pan=${pan}&tilt=${tilt}&`, (ret) => {
+            console.log(JSON.stringify(ret));
+        });
     }
 }
 

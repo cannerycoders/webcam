@@ -18,6 +18,7 @@ export class App
         this.mainNav = "#mainNavList";
         this.openURL = null;
         this.currentPage = null;
+        this.serverInfo = {};
 
         // phList: an ordered (left->right) collection of handlers
         this.phList = []; 
@@ -92,13 +93,13 @@ export class App
     // onReady is invoked after all scripts have finished loading.
     onReady()
     { 
-        app.sendGetRequest(`/api/gettitle`, (ret) => {
+        app.sendGetRequest(`/api/getinfo`, (ret) => {
             if(ret.title)
             {
                 document.title = ret.title;
-                document.getElementById("navtitle").innerHTML = 
-                                                ret.title;
+                document.getElementById("navtitle").innerHTML = ret.title;
             }
+            this.serverInfo = ret;
         });
         window.onbeforeunload = this.onBeforeUnload.bind(this);
 
@@ -238,7 +239,8 @@ export class App
     setDateVisibility(b)
     {
         let el = document.getElementById("navdate");
-        el.style.visibility = b ? "visible" : "hidden";
+        // el.style.visibility = b ? "visible" : "hidden";
+        el.style.display = b ? "block" : "none";
     }
 
 	updateDate(date)

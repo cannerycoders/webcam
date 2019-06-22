@@ -51,7 +51,7 @@ class Timelapse extends PageHandler
                 html += "</div>";
             }
             contentdiv.innerHTML = html;
-
+            navextra.innerHTML = "";
             document.querySelectorAll(".clk").forEach((i) =>
             {
                 i.onclick = this.onClick.bind(this, i);

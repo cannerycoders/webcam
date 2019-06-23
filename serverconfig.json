@@ -21,8 +21,8 @@
         "title": "CanneryCoveIR",
         "serverroot": "/mnt/thumb1",
         "captureroot": "/mnt/thumb1/capture",
-        "subdir": "webcamIR",
+        "subdir": "CanneryCoveIR",
         "port": 8080,
-        "pantilt": true
+        "pantilt": false
     }
 }

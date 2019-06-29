@@ -5,7 +5,7 @@
         "captureroot": "/mnt/thumb1/capture",
         "subdir": "Seatown",
         "port": 8080,
-        "pantilt": true
+        "pantilt": false
     },
 
     "cannerycove": {

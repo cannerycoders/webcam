@@ -62,7 +62,18 @@ class App extends Logger
         this.mailer = new Mailer();
         this.lastFileName = null;
         this.panTiltProcesss = null;
-
+        try
+        {
+            let sc = fs.readFileSync("mailconfig.json");
+            this.mailconfig = JSON.parse(sc);
+        }
+        catch(err)
+        {
+            console.error("invalid/missing mailconfig.json: " + err);
+            this.mailconfig = null;
+        }
+        this.mailer = new Mailer(this.mailconfig);
+        this.lastFileName = null;
         this.exp = express();
         this.exp.use(express.static("www"));
         this.exp.use("/capture", express.static(this.captureRoot));
@@ -438,7 +449,6 @@ class App extends Logger
 
     doPanTilt(pan, tilt, onDone)
     {
-        // only want one running at a time.
         console.info(`doPanTilt request: ${pan} ${tilt}`);
         if(this.panTiltProcess)
         {
@@ -447,7 +457,8 @@ class App extends Logger
         }
         let cmd = `./bin/pantilt ${pan} ${tilt}`;
         this.panTiltProcess = exec(cmd, {
-            timeout: 8000, // 8 seconds to get to target (worst-case measured > 5s)
+            // 8 seconds to get to target (worst-case measured > 5s)
+            timeout: 8000, 
             killSignal: "SIGINT",
         }, (error, stdout, stderr) => {
             if(stderr || error)

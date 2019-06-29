@@ -1,29 +1,34 @@
 // https://bit.ly/2F6wHaj
 const nodeMailer = require("nodemailer");
 
+const ExampleConfig =
+{
+    "transport": {
+        "service": "gmail",
+        "auth": {
+            "user": "yoursendingaccount@gmail.com",
+            "pass": "yoursendingpassword"
+        }
+    },
+    "message": {
+        "from": "'Your Sender' <yoursendingaccount@gmail.com>",
+        "to": "yourmailreceiver@gmail.com",
+        "subject": "message from webcam bot",
+        "text": "here's some body text"
+    }
+};
+
 class Mailer
 {
-    constructor()
+    constructor(mailconfig=null)
     {
-        this.transporter = nodeMailer.createTransport({
-            service: "gmail",
-            auth: {
-                user: "cannerycoders@gmail.com",
-                pass: "G00glePassw0rd"
-            }
-        });
-
+        if(!mailconfig) mailconfig = ExampleConfig;
+        this.transporter = nodeMailer.createTransport(mailconfig.transport);
         this.htmlTemplate = 
           "<html><head><title><h3>${title}</h3></title></head><body>" +
               "<table><tr><td><pre>${msg}</pre></td></tr></table>"+
           "</body></html>";
-
-        this.mailOptions = {
-            from:'"Cannery Coders Mailer" <cannerycoders@gmail.com>',
-            to: "dana.batali@gmail.com",
-            subject: "Notice from CanneryCoders",
-            text: "here's your first test mail",
-        };
+        this.mailOptions = mailconfig.messageOptions; 
     }
 
     Send(subject, msg, asHtml=false)

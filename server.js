@@ -59,7 +59,7 @@ class App extends Logger
         }
         catch(err)
         {
-            console.error("invalid mailconfig: " + err);
+            console.error("invalid/missing mailconfig.json: " + err);
             this.mailconfig = null;
         }
         this.mailer = new Mailer(this.mailconfig);

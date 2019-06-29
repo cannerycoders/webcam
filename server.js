@@ -48,6 +48,14 @@ class App extends Logger
         this.subdir = this.config.subdir;
         this.timelapseDir = 
                 `${this.captureRoot}/${this.subdir}/timelapse`;
+        try
+        {
+            fs.mkdirSync(this.timelapseDir, {recursive: true});
+        }
+        catch(err)
+        {
+            app.error(err);
+        }
 
         this.picam = new Picam();
         this.imgcmp = new ImgCmp();

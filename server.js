@@ -51,7 +51,18 @@ class App extends Logger
 
         this.picam = new Picam();
         this.imgcmp = new ImgCmp();
-        this.mailer = new Mailer();
+
+        try
+        {
+            let sc = fs.readFileSync("mailconfig.json");
+            this.mailconfig = JSON.parse(sc);
+        }
+        catch(err)
+        {
+            console.error("invalid mailconfig: " + err);
+            this.mailconfig = null;
+        }
+        this.mailer = new Mailer(this.mailconfig);
         this.lastFileName = null;
 
         this.exp = express();

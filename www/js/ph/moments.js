@@ -9,11 +9,15 @@ class Moments extends PageHandler
         this.modalDiv = document.getElementById("modalDiv");
         this.caption = document.getElementById("modalCaption");
         this.modalContainer = document.getElementById("modalContainer");
+        this.modalLeft = document.getElementById("modalLeft");
+        this.modalRight = document.getElementById("modalRight");
         this.modalClose = document.getElementById("modalClose");
-        this.modalClose.onclick = function()
+        this.modalClose.onclick  = () =>
         {
             this.modalDiv.style.display = "none";
-        }.bind(this);
+        }
+        this.modalLeft.onclick = this.onNext.bind(this, "left");
+        this.modalRight.onclick = this.onNext.bind(this, "right");
     }
 
     GetId()
@@ -33,17 +37,16 @@ class Moments extends PageHandler
 
         // getday returns list of files
         app.sendGetRequest(`/api/getday?day=${daystr}`, (ret) => {
-            let dir = ret.dir;
-            let files = ret.files;
+            this.dir = ret.dir;
+            this.files = ret.files.filter(fn=>fn.indexOf(".thumb") == -1); 
             let html = "";
-            for(let i=0;i<files.length;i++)
+            for(let i=0;i<this.files.length;i++)
             {
-                let f = files[i];
-                if(f.indexOf(".thumb") != -1) continue;
-                let fp = `${dir}/${f}`;
+                let f = this.files[i];
+                let fp = `${this.dir}/${f}`;
                 let fpt = fp + ".thumb";
                 html += "<div>";
-                html += `<img class='thumbnail hoverable clk' src='${fpt}'/>`;
+                html += `<img class='thumbnail hoverable clk' id='img${i}' src='${fpt}'/>`;
                 html += "</div>";
             }
             contentdiv.innerHTML = html;
@@ -58,6 +61,29 @@ class Moments extends PageHandler
     onClick(i)
     {
         let imgurl = i.src.replace(/.thumb/, "");
+        let id = Number(i.id.slice(3));
+        this.loadModalImg(imgurl, id);
+    }
+
+    onNext(dir)
+    {
+        if(this.currentId != undefined)
+        {
+            let id;
+            if(dir == "left")
+                id = this.currentId - 1;
+            else
+                id = this.currentId + 1;
+            if(id >= 0 && id < this.files.length)
+            {
+                let fp = `${this.dir}/${this.files[id]}`;
+                this.loadModalImg(fp, id);
+            }
+        }
+    }
+
+    loadModalImg(imgurl, id)
+    {
         let imgi = imgurl.lastIndexOf("/") + 1; // 0 if fail, which is good
         let imgcaption = imgurl.slice(imgi)
                             .split(".")[0]
@@ -66,6 +92,7 @@ class Moments extends PageHandler
         this.modalContainer.innerHTML = 
                     `<img class='modal-content' src='${imgurl}' />`;
         this.caption.innerHTML = imgcaption;
+        this.currentId = id; 
     }
 
 }

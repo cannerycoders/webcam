@@ -115,20 +115,37 @@ a:active /* selected link */
     font-size: 40px;
 }
 
-.modal-close
+.modal-ctrl
 {
     position: absolute;
-    top: 115px;
-    right: 35px;
     color: #f1f1f1;
     font-size: 40px;
     font-weight: bold;
     transition: .3s;
 }
 
-.modal-close:hover,
-.modal-close:focus
+.modal-close
 {
+    top: 115px;
+    right: 35px;
+}
+
+.modal-left
+{
+    top: 225px;
+    left: 35px;
+}
+
+.modal-right
+{
+    top: 225px;
+    right: 35px;
+}
+
+.modal-ctrl:hover,
+.modal-ctrl:focus
+{
+
     color: #bbb;
     text-decoration: none;
     cursor: pointer;

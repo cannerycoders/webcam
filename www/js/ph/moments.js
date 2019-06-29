@@ -88,9 +88,16 @@ class Moments extends PageHandler
         let imgcaption = imgurl.slice(imgi)
                             .split(".")[0]
                             .replace(/_/, ":");
-        this.modalDiv.style.display = "block";
-        this.modalContainer.innerHTML = 
+        if(this.modalDiv.style.display != "block")
+            this.modalDiv.style.display = "block";
+        let img = this.modalDiv.getElementsByTagName("img")[0];
+        if(!img)
+        {
+            this.modalContainer.innerHTML = 
                     `<img class='modal-content' src='${imgurl}' />`;
+        }
+        else
+            img.src = imgurl;
         this.caption.innerHTML = imgcaption;
         this.currentId = id; 
     }

@@ -28,22 +28,22 @@ class Mailer
           "<html><head><title><h3>${title}</h3></title></head><body>" +
               "<table><tr><td><pre>${msg}</pre></td></tr></table>"+
           "</body></html>";
-        this.mailOptions = mailconfig.messageOptions; 
+        this.messageOptions = mailconfig.message; 
     }
 
     Send(subject, msg, asHtml=false)
     {
-        this.mailOptions.subject = subject;
-        this.mailOptions.text = msg;
+        this.messageOptions.subject = subject;
+        this.messageOptions.message = msg;
         if(asHtml)
         {
-            this.mailOptions.html = this.interpolate(this.htmlTemplate, 
+            this.messageOptions.html = this.interpolate(this.htmlTemplate, 
                 {
                     title: subject,
                     msg: msg
                 });
         }
-        this.transporter.sendMail(this.mailOptions, 
+        this.transporter.sendMail(this.messageOptions, 
             (error, info) => {
                 if (error) 
                     console.warn(JSON.stringify(error, null, 2));

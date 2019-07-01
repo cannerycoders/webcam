@@ -6,8 +6,8 @@ class ImgCmp
     {
         this.cmd = "./bin/perceptualdiff";
         this.args = [
-            "--down-sample", 3,
-            "--threshold", 15000, // pixels
+            "--down-sample", 2,
+            "--threshold", 18000, // pixels
         ];
         this.execOpts = {}; // cwd?
     }

@@ -266,7 +266,7 @@ class App extends Logger
         let hours = now.getHours();
         let min = now.getMinutes();
 
-        if(min < IdleMinutes)
+        if(min < IdleMinutes*1.5)
         {
             let routine;
             if(hours == 2)
@@ -399,7 +399,7 @@ class App extends Logger
             this.generateReport(routine, dstr, (msg) => {
                 this.mailer.Send(subject, msg, true);
             });
-            break;
+            // fall-through
         case "hourly":
             // ensure we get at least one file/hour
             this.lastFileName = null; 

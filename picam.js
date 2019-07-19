@@ -17,11 +17,10 @@ class PiCam
         this.captureArgs = [
             "--nopreview",
             "--timeout", 5000, // ms
-            // "--ISO", 400,  // (100-800)
             "--sharpness", 25, // (-100, 100) - 0 is default
             "--exposure", "auto",
             "--metering", "average", // spot
-            "--quality", 75,
+            "--quality", 90,
             "-o",
             ]
         this.thumbArgs = [

@@ -1,6 +1,6 @@
 {
     "seatown": {
-        "title": "SeatownCam",
+        "title": "Seatown",
         "serverroot": "/mnt/thumb1",
         "captureroot": "/mnt/thumb1/capture",
         "subdir": "Seatown",
@@ -9,7 +9,7 @@
     },
 
     "cannerycove": {
-        "title": "CanneryCoveCam",
+        "title": "CanneryCove",
         "serverroot": "/mnt/thumb1",
         "captureroot": "/mnt/thumb1/capture",
         "subdir": "CanneryCove",

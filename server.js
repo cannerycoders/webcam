@@ -416,13 +416,13 @@ class App extends Logger
         let captureDir = this.buildCaptureDir(date);
         let cmd = "python3"
         let args = ["buildTimelapse.py", captureDir, this.timelapseDir];
-        execFile(cmd, args, {},
-                (error, stdout, stderr) => {
-                    this.notice("buildTimelapse\n"+
-                        `  stdout ${stdout}\n  ` +
-                        `  stderr ${stderr}`)
-                }
-            );
+        execFile(cmd, args, {}, (error, stdout, stderr) => 
+        {
+            this.timelapseReport = "buildTimelapse\n"+
+                                    `  stdout ${stdout}\n  ` +
+                                    `  stderr ${stderr}`;
+            this.notice(this.timelapseReport);
+        });
     }
 
     generateReport(routine, datestr, onDone)
@@ -442,6 +442,14 @@ class App extends Logger
                 if(stderr.length)
                     msg += `### stderr ####\n\n${stderr}\n`;
                 msg += "</code>\n";
+                if(this.timelapseReport)
+                {
+                    msg += "<hr>\n";
+                    msg += "<code>\n";
+                    msg += this.timelapseReport;
+                    msg += "</code>\n";
+                    this.timelapseReport = null;
+                }
                 onDone(msg);
             }
         });

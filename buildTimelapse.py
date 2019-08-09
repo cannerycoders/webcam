@@ -5,15 +5,34 @@
 # assumptions
 #  1. sparse collection of input files named HH_MM.jpg 
 #   a. sort order == temporal order
-#   a. aspect ratio is 4:3, size is pi native
-#   b. we'd like to normalize time - so duration of result is
+#   b. aspect ratio is 4:3, size is pi native, size: 2592x1944
+#   c. we'd like to normalize time - so duration of result is
 #      independent of sparsity, ie: time passes linearly
-#   c. there are no more than ~ 24 * 60/5 input images
+#   d. there are no more than ~ 24 * 60/5 input images
 #  2. opencv is installed with python binding. We use it to
 #    resize and normalize the sparse set of input images.
 #   a. output res is DVD or XGA (720x480), 1024x768
 #  3. ffmpeg is installed and supports the libxh264 codec
 #
+#
+# we can crop with opencv images via numpy slicing:
+#
+#   img = cv2.imread("lenna.png")
+#   crop_img = img[y:y+h, x:x+w]`
+#
+#  
+# if temporal resampling weren't needed we could resize/crop
+# via ffmpeg:
+#
+# https://bit.ly/2ONW1JL
+#
+#   ffmpeg -i in.mp4 -filter:v "crop=80:60:200:100" -c:a copy out.mp4
+#
+# https://trac.ffmpeg.org/wiki/Scaling
+# 
+#  ffmpeg -i input.avi -vf scale=320:240 output.avi
+#
+
 import cv2
 import os.path as path
 import os

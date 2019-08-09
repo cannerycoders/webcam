@@ -50,7 +50,8 @@ class Now extends PageHandler
             navextra.innerHTML = "<span id='panTxt'>pan 000</span>"+
                                  "<input id='panSlider' type='range'/> " +
                                  "<span id='tiltTxt'>tilt 000</span>"+
-                                 "<input id='tiltSlider' type='range'/>";
+                                 "<input id='tiltSlider' type='range'/>"+
+                                 "<br >(58,100) or (95,39)";
 
             this.panTxt = document.getElementById("panTxt");
             this.panSlider = document.getElementById("panSlider");

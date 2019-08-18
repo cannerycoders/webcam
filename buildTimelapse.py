@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# produce a single m4v (h264) from a directory of images
+# Produce a single m4v (h264) from a directory of images
 #
 # assumptions
 #  1. sparse collection of input files named HH_MM.jpg 
@@ -8,44 +8,49 @@
 #   b. aspect ratio is 4:3, size is pi native, size: 2592x1944
 #   c. we'd like to normalize time - so duration of result is
 #      independent of sparsity, ie: time passes linearly
-#   d. there are no more than ~ 24 * 60/5 input images
+#   d. there are no more than ~ 24 * 60 input images (one per minute)
 #  2. opencv is installed with python binding. We use it to
 #    resize and normalize the sparse set of input images.
 #   a. output res is DVD or XGA (720x480), 1024x768
 #  3. ffmpeg is installed and supports the libxh264 codec
 #
 #
-# we can crop with opencv images via numpy slicing:
+# notes:
+#   experiment with direct opencv convertion failed, so we resize then 
+#       exec a lengthy ffmpeg process.
 #
-#   img = cv2.imread("lenna.png")
-#   crop_img = img[y:y+h, x:x+w]`
+#   we can crop with opencv images via numpy slicing:
+#
+#       img = cv2.imread("lenna.png")
+#       crop_img = img[y:y+h, x:x+w]`
 #
 #  
-# if temporal resampling weren't needed we could resize/crop
-# via ffmpeg:
+#   if temporal resampling weren't needed we could resize/crop via ffmpeg:
 #
-# https://bit.ly/2ONW1JL
+#       https://bit.ly/2ONW1JL
+#       ffmpeg -i in.mp4 -filter:v "crop=80:60:200:100" -c:a copy out.mp4
 #
-#   ffmpeg -i in.mp4 -filter:v "crop=80:60:200:100" -c:a copy out.mp4
-#
-# https://trac.ffmpeg.org/wiki/Scaling
-# 
-#  ffmpeg -i input.avi -vf scale=320:240 output.avi
+#       https://trac.ffmpeg.org/wiki/Scaling
+#       ffmpeg -i input.avi -vf scale=320:240 output.avi
 #
 
 import cv2
-import os.path as path
-import os
-import subprocess
+import sys, traceback, subprocess, os
+from datetime import datetime
+from subprocess import PIPE
+from os import path
 from sys import argv
 from shutil import copyfile, rmtree
 
-# experiment with direct opencv convertion failed, so we resize
-# then exec a lengthy ffmpeg process.
+DEBUG_RESAMPLE = False
+DEBUG_MOVIE = False   # True -> don't cleanup resampled dir
 
-# resizeImages found in inputdir that match *.jpg
-# results are written to inputdir/resized
-def resizeImages(inputdir, framewidth, force=False):
+#
+# resampleImages:
+#   resize images found in inputdir that match *.jpg
+#   results are temporally resampled and written to inputdir/resized
+#
+def resampleImages(inputdir, framewidth, force=False):
     os.chdir(inputdir)
     outputdir = path.join(inputdir, "resampled")
     try:
@@ -55,7 +60,10 @@ def resizeImages(inputdir, framewidth, force=False):
         doit = force
 
     if not doit:
-        print("Resampling already done. Short-circuiting ...")
+        if DEBUG_RESAMPLE:
+            doit = true
+        else:
+            print("Resampling already done. Short-circuiting ...")
     else:
         print("Resampling imgdir " + inputdir + " to " + outputdir)
 
@@ -67,67 +75,77 @@ def resizeImages(inputdir, framewidth, force=False):
         raise Exception("no img files in " + inputdir)
     imgfiles.sort()
 
-    i = 0 
-    firstframe = -1
-    lastmin = -1
+    outIndex = 0 
+    outpattern = "%04d.jpg"
+
+    lastKeyframe = -1
     lastimg = None
     thumbnail = None
     outbase = None
-    outpattern = None
+
     for infile in imgfiles: # no dir in imgfile
         # base is assumed to be of the form HH_DD, we'd like to
         # output one file per minute of the day
         split = path.splitext(infile);
         base = split[0]
         ext = split[-1]
-        if outpattern == None:
-            outpattern = "%04d" + ext
         ts = base.split("_")
-        newmin = int(ts[1]) + 60 * int(ts[0])
-        if doit or firstframe == -1:
-            img = cv2.imread(path.join(inputdir, infile), cv2.IMREAD_COLOR)
-        height, width, depth = img.shape
-        scale = framewidth/width
-        newW,newH = int(width*scale), int(height*scale)
-        newimg = cv2.resize(img, (newW, newH))
-
-        # 60*24 minutes: 1440
-        if not lastimg is None:
-            while i < newmin:
-                outfile = outpattern % i
-                if i % 300 == 0:
-                    print(" %s->%s %d<%d" %  (infile, outfile, i, newmin))
-                # fade between last and new
-                if doit:
-                    pct = (i - lastmin) / float(newmin - lastmin)
-                    dst = cv2.addWeighted(lastimg, 1-pct, newimg, pct, 0)
-                    cv2.imwrite(path.join(outputdir, outfile), dst)
-                i += 1
-        else:
-            firstframe = newmin
-            i = newmin
+        newKeyframe = 60 * int(ts[0]) + int(ts[1])
 
         if doit:
-            outfile = outpattern % i # 60*24 minutes: 1440
+            img = cv2.imread(path.join(inputdir, infile), cv2.IMREAD_COLOR)
+            height, width, depth = img.shape
+        else:
+            height, width = (1024, 720)
+
+        scale = framewidth/width
+        newW,newH = int(width*scale), int(height*scale)
+        if doit:
+            newimg = cv2.resize(img, (newW, newH))
+        else:
+            newimg = "XXX"
+
+        if lastimg is None:
+            # nothing to write
+            pass
+        else:
+            imin = lastKeyframe+1 # lastKeyframe was written
+            while imin < newKeyframe:
+                outfile = outpattern % outIndex
+                pct = (imin - lastKeyframe) / float(newKeyframe - lastKeyframe)
+                if outIndex % 300 == 0:
+                    print(" %s->%s (%f)" %  (infile, outfile, pct))
+                # fade between last and new
+                if doit:
+                    dst = cv2.addWeighted(lastimg, 1-pct, newimg, pct, 0)
+                    cv2.imwrite(path.join(outputdir, outfile), dst)
+                imin += 1
+                outIndex += 1
+
+        # write our keyframe
+        outfile = outpattern % outIndex
+        if outIndex % 300 == 0:
+            print(" %s->%s (keyframe)" %  (infile, outfile))
+
+        if doit:
             cv2.imwrite(path.join(outputdir, outfile), newimg)
         
-        if not thumbnail and i > 700:
+        if outIndex == 700:
             # this for our single thumbnail, near midday
-            print(" thumbnail at %s (%d) ------------" % (infile, i))
+            print(" %s->thumb.jpg" % infile)
             tscale = 100/width # 100 pixels wide
             if doit:
                 thumbnail = cv2.resize(img, 
                                 (int(tscale*width), int(tscale*height)))
                 cv2.imwrite(path.join(outputdir, "thumb.jpg"), thumbnail)
-            thumbnail = True # 'release' thumbnail img
+                # XXX 'release' thumbnail img
 
         lastimg = newimg
-        lastmin = i
-        i += 1
+        lastKeyframe = newKeyframe
+        outIndex += 1
 
-    print("  done!", (firstframe, lastmin))
-    return (outpattern, firstframe, outputdir)
-
+    print(" done resampling %d images" % outIndex)
+    return (outpattern, 0, outputdir)
 
 def makeMovie(inputdir, startFrame, outputfile):
     # for ffmpeg commandline help: https://bit.ly/2XdXThE
@@ -136,17 +154,39 @@ def makeMovie(inputdir, startFrame, outputfile):
     #       -i "06_13.%04d.jpg" \
     #       -vcodec libx264  \
     #       06_13.mp4
-
     os.chdir(inputdir)
     framerate = 20
     # this subprocess idiom doesn't redirect stdout/stderr
-    subprocess.run(["ffmpeg", 
+    movieCmd = ["ffmpeg", 
+                "-y", # overwrite target
                 "-loglevel", "panic",
                 "-r", str(framerate), 
                 "-start_number", str(startFrame),
                 "-i", "%4d.jpg",
                 "-vcodec", "libx264",
-                outputfile])
+                outputfile]
+    movieStr = " ".join(movieCmd)
+    if DEBUG_MOVIE:
+        print("Running `%s'" % movieStr)
+    else:
+        print("Running ffmpeg")
+
+    before = datetime.now()
+    ret = subprocess.run(movieCmd, stdout=PIPE, stderr=PIPE)
+    after = datetime.now()
+    seconds = (after - before).total_seconds()
+    minutes = int(seconds // 60)
+    seconds = int(seconds - (minutes * 60))
+    print("  finished in {:02}:{:02}".format(minutes, seconds))
+    print("  returned with %d return code" % ret.returncode)
+    if len(ret.stdout) > 0:
+        print("  stdout {")
+        print(ret.stdout)
+        print("  }")
+    if len(ret.stderr) > 0:
+        print("  stderr {")
+        print(ret.stderr)
+        print("  }\n\n")
 
 #
 # ./buildTimelapse.py \
@@ -180,20 +220,28 @@ def main():
         return
 
     if path.isdir(indir):
-        (imgpattern, firstframe, resampledir) = resizeImages(indir, movieWidth)
+        (outpat, frame0, resampledir) = resampleImages(indir, movieWidth)
 
         # inputdir is assumed ../fullyear/month/day
         dirs = indir.split("/")
         subdirs = dirs[-3:]
         outfilebase = path.join(outdir, "_".join(subdirs))
         moviefile = outfilebase+".mp4"
-        print("creating movie file " + moviefile)
-        makeMovie(resampledir, firstframe, moviefile)
-        thumbnail = path.join(outfilebase+".jpg")
-        print("installing thumbnail as " + thumbnail)
-        copyfile(path.join(resampledir, "thumb.jpg"), thumbnail)
-        print("cleaning resampled area " + resampledir)
-        rmtree(resampledir)
+
+        try:
+            makeMovie(resampledir, frame0, moviefile)
+
+            thumbnail = path.join(outfilebase+".jpg")
+
+            print("Installing thumbnail as " + thumbnail)
+            copyfile(path.join(resampledir, "thumb.jpg"), thumbnail)
+
+        except Exception:
+            traceback.print_exc()
+
+        if not DEBUG_MOVIE:
+            print("Cleaning resampled area " + resampledir)
+            rmtree(resampledir)
         
     else:
         print("ERROR: '" + indir + "' is not a directory")

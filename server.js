@@ -60,6 +60,7 @@ class App extends Logger
         this.picam = new Picam();
         this.imgcmp = new ImgCmp();
         this.mailer = new Mailer();
+        this.nightlyDone = false; // reset at midnight
         this.lastFileName = null;
         this.panTiltProcesss = null;
         try
@@ -261,29 +262,31 @@ class App extends Logger
 
     onIdle()
     {
-        // perform a snapshot, compare it with last frame
         let now = new Date();
         let hours = now.getHours();
         let min = now.getMinutes();
-
-        if(min < IdleMinutes*1.5)
+        if(min < IdleMinutes*1.25) // top of the hour
         {
             let routine;
-            if(hours == 2)
-                routine = "nightly";
+            if(hours == 0)
+                this.nightlyDone = false;
             else
-            if(hours == 3)
+            if(hours == 2 && !this.nightlyDone)
             {
+                this.nightlyDone = true;
                 if(now.getDate() == 1)
                     routine = "monthly";
                 else
                 if(now.getDay() == 0)
                     routine = "weekly";
+                else
+                    routine = "nightly";
             }
             else
                 routine = "hourly";
             this.performScheduledTasks(routine, now);
         }
+        // perform a snapshot, compare it with last frame
         this.doCapture();
         setTimeout(this.onIdle.bind(this), IdleInterval);
     }
@@ -392,19 +395,18 @@ class App extends Logger
                 yesterday.setDate(d.getDate() - 1);
                 this.generateTimelapse(yesterday);
             }
-            // fall-thru
+            break;
         case "weekly":
         case "monthly":
         case "startup":
-            this.generateReport(routine, dstr, (msg) => {
-                this.mailer.Send(subject, msg, true);
-            });
-            // fall-through
+            // could do some disk cleanups, backups, etc
+            break;
         case "hourly":
-            // ensure we get at least one file/hour
-            this.lastFileName = null; 
             break; // logged above
         }
+        // assuming scheduled tasks occur on the hour, we ensure 
+        // we get at least one file/hour by defeating the imgdiff
+        this.lastFileName = null; 
     }
 
     generateTimelapse(date)
@@ -418,14 +420,18 @@ class App extends Logger
         let args = ["buildTimelapse.py", captureDir, this.timelapseDir];
         execFile(cmd, args, {}, (error, stdout, stderr) => 
         {
-            this.timelapseReport = "buildTimelapse\n"+
+            let timelapseReport = "buildTimelapse\n"+
                                     `  stdout ${stdout}\n  ` +
                                     `  stderr ${stderr}`;
-            this.notice(this.timelapseReport);
+            this.notice(timelapseReport);
+            this.generateReport(routine, dstr, xtra, (msg) => {
+                this.timelapseReport = null;
+                this.mailer.Send(subject, msg, true);
+            });
         });
     }
 
-    generateReport(routine, datestr, onDone)
+    generateReport(routine, datestr, xtra, onDone)
     {
         // for now we ignore detail param
         let cmd = `df -h ${this.captureRoot}`;
@@ -442,13 +448,12 @@ class App extends Logger
                 if(stderr.length)
                     msg += `### stderr ####\n\n${stderr}\n`;
                 msg += "</code>\n";
-                if(this.timelapseReport)
+                if(xtra)
                 {
                     msg += "<hr>\n";
                     msg += "<code>\n";
-                    msg += this.timelapseReport;
+                    msg += xtra;
                     msg += "</code>\n";
-                    this.timelapseReport = null;
                 }
                 onDone(msg);
             }

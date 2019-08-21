@@ -265,8 +265,9 @@ class App extends Logger
         let now = new Date();
         let hours = now.getHours();
         let min = now.getMinutes();
-        if(min < IdleMinutes*1.25) // top of the hour
+        if(min < IdleMinutes*1.25) 
         {
+            // top of the hour --------------------------
             let routine;
             if(hours == 0)
                 this.nightlyDone = false;
@@ -274,17 +275,22 @@ class App extends Logger
             if(hours == 2 && !this.nightlyDone)
             {
                 this.nightlyDone = true;
+                routine = "nightly";
+            }
+            else
+            if(hours == 3)
+            {
                 if(now.getDate() == 1)
                     routine = "monthly";
                 else
                 if(now.getDay() == 0)
                     routine = "weekly";
-                else
-                    routine = "nightly";
             }
-            else
-                routine = "hourly";
-            this.performScheduledTasks(routine, now);
+            if(routine)
+                this.performScheduledTasks(routine, now);
+
+            // we get at least one file/hour by defeating the imgdiff
+            this.lastFileName = null; 
         }
         // perform a snapshot, compare it with last frame
         this.doCapture();
@@ -384,32 +390,27 @@ class App extends Logger
     /*-------------------------------------------------------------*/
     performScheduledTasks(routine, d)
     {
-        let dstr = d.toLocaleString();
-        let subject = `webcam ${this.hostname} ${routine} ${dstr}`;
-        console.info(subject);
         switch(routine)
         {
-        case "nightly": 
+        case "startup":
+            this.generateReport(routine);
+            break;
+        case "nightly":  // happens *every* night
             {
                 let yesterday = new Date(d);
                 yesterday.setDate(d.getDate() - 1);
-                this.generateTimelapse(yesterday);
+                this.generateTimelapse(yesterday, 
+                            this.generateReport.bind(this, routine));
             }
             break;
-        case "weekly":
+        case "weekly": // happens occasionally, one hour after nightly
         case "monthly":
-        case "startup":
             // could do some disk cleanups, backups, etc
             break;
-        case "hourly":
-            break; // logged above
         }
-        // assuming scheduled tasks occur on the hour, we ensure 
-        // we get at least one file/hour by defeating the imgdiff
-        this.lastFileName = null; 
     }
 
-    generateTimelapse(date)
+    generateTimelapse(date, whenDone)
     {
         // exec python buildTimelapse in the background
         // ./buildTimelapse.py \
@@ -420,18 +421,15 @@ class App extends Logger
         let args = ["buildTimelapse.py", captureDir, this.timelapseDir];
         execFile(cmd, args, {}, (error, stdout, stderr) => 
         {
-            let timelapseReport = "buildTimelapse\n"+
+            let xtra = "buildTimelapse\n"+
                                     `  stdout ${stdout}\n  ` +
                                     `  stderr ${stderr}`;
-            this.notice(timelapseReport);
-            this.generateReport(routine, dstr, xtra, (msg) => {
-                this.timelapseReport = null;
-                this.mailer.Send(subject, msg, true);
-            });
+            this.notice(xtra);
+            whenDone(xtra);
         });
     }
 
-    generateReport(routine, datestr, xtra, onDone)
+    generateReport(routine, xtra)
     {
         // for now we ignore detail param
         let cmd = `df -h ${this.captureRoot}`;
@@ -440,7 +438,8 @@ class App extends Logger
                 console.error(`${error} ${stderr}`);
             else
             {
-                let msg = `webcam ${this.hostname} report ${datestr}\n\n`;
+                let dstr = (new Date()).toLocaleString();
+                let msg = `webcam ${this.hostname} report ${dstr}\n\n`;
                 msg += `${cmd}\n\n`;
                 msg += "<code>\n";
                 if(stdout.length)
@@ -455,7 +454,8 @@ class App extends Logger
                     msg += xtra;
                     msg += "</code>\n";
                 }
-                onDone(msg);
+                let subject = `webcam ${this.hostname} ${routine} ${dstr}`;
+                this.mailer.Send(subject, msg, true);
             }
         });
     }

@@ -198,10 +198,13 @@ def makeMovie(inputdir, startFrame, outputfile):
 def usage():
     return '''
 %s [options] [inputdir] outputdir
-  Convert the images found in <inputdir> to produce a movie named <outputfile>
+
+  Convert the images found in <inputdir> to produce a movie named
+  according to YYYY_MM_DD in <outputdir>
+  
   Options:
     <none so far>
-got: %s
+
 ''' % (path.basename(argv[0]), argv)
 
 def main():

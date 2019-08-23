@@ -130,7 +130,7 @@ def resampleImages(inputdir, framewidth, force=False):
         if doit:
             cv2.imwrite(path.join(outputdir, outfile), newimg)
         
-        if outIndex >= 700 and thumbnail == None:
+        if outIndex >= 700 and (thumbnail is None):
             # this for our single thumbnail, near midday
             print(" %s->thumb.jpg" % infile)
             tscale = 100/width # 100 pixels wide

@@ -139,6 +139,8 @@ def resampleImages(inputdir, framewidth, force=False):
                                 (int(tscale*width), int(tscale*height)))
                 cv2.imwrite(path.join(outputdir, "thumb.jpg"), thumbnail)
                 # XXX 'release' thumbnail img
+            else:
+                thumbnail = True
 
         lastimg = newimg
         lastKeyframe = newKeyframe

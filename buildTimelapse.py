@@ -65,7 +65,7 @@ def resampleImages(inputdir, framewidth, force=False):
         else:
             print("Resampling already done. Short-circuiting ...")
     else:
-        print("Resampling imgdir " + inputdir + " to " + outputdir)
+        print("Resampling imgdir " + inputdir)
 
     files = os.listdir(inputdir)
     if len(files) == 0:
@@ -130,7 +130,7 @@ def resampleImages(inputdir, framewidth, force=False):
         if doit:
             cv2.imwrite(path.join(outputdir, outfile), newimg)
         
-        if outIndex == 700:
+        if outIndex >= 700 and thumbnail == None:
             # this for our single thumbnail, near midday
             print(" %s->thumb.jpg" % infile)
             tscale = 100/width # 100 pixels wide

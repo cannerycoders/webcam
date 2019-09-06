@@ -22,8 +22,9 @@ const DefaultServerConfig =
 };
 
 const AppName = "webcam";
-const IdleMinutes = 3;
-const IdleInterval = IdleMinutes * 60 * 1000;
+
+var IdleMinutes = 3;
+var IdleInterval = IdleMinutes * 60 * 1000;
 
 class App extends Logger
 {
@@ -263,8 +264,8 @@ class App extends Logger
     onIdle()
     {
         let now = new Date();
-        let hours = now.getHours();
-        let min = now.getMinutes();
+        let hours = now.getHours(); // [0,23]
+        let min = now.getMinutes(); 
         if(min < IdleMinutes*1.25) 
         {
             // top of the hour --------------------------
@@ -286,6 +287,7 @@ class App extends Logger
                 if(now.getDay() == 0)
                     routine = "weekly";
             }
+            this.performScheduledTasks("hourly", now);
             if(routine)
                 this.performScheduledTasks(routine, now);
 
@@ -394,6 +396,29 @@ class App extends Logger
         {
         case "startup":
             this.generateReport(routine);
+             // fall through to hourly
+        case "hourly":
+            if(this.config.schedule)
+            {
+                // expect a list of {hours: pat, interval: min}
+                // first one wins
+                let hours = d.getHours();
+                for(let o of this.config.schedule)
+                {
+                    let r = new RegExp(o.hours);
+                    if(r.test(hours))
+                    {
+                        let newMinutes = o.interval;
+                        if(newMinutes != IdleMinutes)
+                        {
+                            this.notice("Time interval changed to "+newMinutes);
+                            IdleMinutes = newMinutes;
+                            IdleInterval = IdleMinutes * 60 * 1000;
+                        }
+                        break; // winner
+                    }
+                }
+            }
             break;
         case "nightly":  // happens *every* night
             {

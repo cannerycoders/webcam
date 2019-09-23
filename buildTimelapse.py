@@ -80,6 +80,8 @@ def resampleImages(inputdir, framewidth, force=False):
 
     lastKeyframe = -1
     lastimg = None
+    lastkeyimg = None
+    lastkeyfile = None
     thumbnail = None
     outbase = None
 
@@ -126,28 +128,39 @@ def resampleImages(inputdir, framewidth, force=False):
         outfile = outpattern % outIndex
         if outIndex % 300 == 0:
             print(" %s->%s (keyframe)" %  (infile, outfile))
+            lastkeyimg = newimg;
+            lastkeyfile = infile
 
         if doit:
             cv2.imwrite(path.join(outputdir, outfile), newimg)
         
-        if outIndex >= 700 and (thumbnail is None):
+        if (thumbnail is None) and ("12_" in infile):
             # this for our single thumbnail, near midday
-            print(" %s->thumb.jpg" % infile)
-            tscale = 100/width # 100 pixels wide
+            #  NB: if a day doesn't begin 'til after midday, we're
+            # in  a pickle
             if doit:
-                thumbnail = cv2.resize(img, 
-                                (int(tscale*width), int(tscale*height)))
-                cv2.imwrite(path.join(outputdir, "thumb.jpg"), thumbnail)
-                # XXX 'release' thumbnail img
-            else:
-                thumbnail = True
+               makeThumbnail(infile, newimg, outputdir, width, height)
+
+            thumbnail = True
 
         lastimg = newimg
         lastKeyframe = newKeyframe
         outIndex += 1
 
+    if (thumbnail is None) and (lastkeyimg is not None):
+        if doit:
+            makeThumbnail(lastkeyfile, lastkeyimg, outputdir, width, height)
+        else:
+            print("Warning: no thumbnail?")
+        
     print(" done resampling %d images" % outIndex)
     return (outpattern, 0, outputdir)
+
+def makeThumbnail(infile, img, outputdir, w, h):
+    print(" %s->thumb.jpg" % infile)
+    tscale = 100/w # 100 pixels wide
+    thumbnail = cv2.resize(img, (int(tscale*w), int(tscale*h)))
+    cv2.imwrite(path.join(outputdir, "thumb.jpg"), thumbnail)
 
 def makeMovie(inputdir, startFrame, outputfile):
     # for ffmpeg commandline help: https://bit.ly/2XdXThE
